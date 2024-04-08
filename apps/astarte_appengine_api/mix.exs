@@ -110,7 +110,7 @@ defmodule Astarte.AppEngine.API.Mixfile do
       # Test section
       {:excoveralls, "~> 0.15", only: :test},
       {:mox, "~> 0.5", only: :test},
-      {:stream_data, "~> 0.5", only: :test}
+      {:stream_data, "~> 0.5"}
     ]
   end
 end

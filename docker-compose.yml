@@ -105,9 +105,9 @@ services:
       - "traefik.http.services.astarte-pairing-api.loadbalancer.server.port=4003"
 
   astarte-appengine-api:
-    image: astarte/astarte_appengine_api:snapshot
     build:
       context: apps/astarte_appengine_api
+      dockerfile: ./Dockerfile
     env_file:
       - ./compose.env
     environment:
