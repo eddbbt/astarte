@@ -71,9 +71,9 @@ services:
       - "traefik.http.services.astarte-realm-management-api.loadbalancer.server.port=4000"
 
   astarte-pairing:
-    image: astarte/astarte_pairing:snapshot
     build:
       context: apps/astarte_pairing
+      dockerfile: ./Dockerfile
     env_file:
       - ./compose.env
     environment:
@@ -84,9 +84,9 @@ services:
       - "scylla"
 
   astarte-pairing-api:
-    image: astarte/astarte_pairing_api:snapshot
     build:
       context: apps/astarte_pairing_api
+      dockerfile: ./Dockerfile
     env_file:
       - ./compose.env
     restart: on-failure

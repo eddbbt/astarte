@@ -170,6 +170,9 @@ defmodule Astarte.Pairing.Engine do
       device_status = device_status_string(device_row)
       protocols = get_protocol_info()
 
+      IO.inspect(device_status)
+      IO.inspect(protocols)
+
       {:ok, %{version: @version, device_status: device_status, protocols: protocols}}
     else
       {:authorized?, false} ->
