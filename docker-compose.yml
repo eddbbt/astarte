@@ -129,9 +129,9 @@ services:
       - "traefik.http.services.astarte-appengine-api.loadbalancer.server.port=4002"
 
   astarte-data-updater-plant:
-    image: astarte/astarte_data_updater_plant:snapshot
     build:
       context: apps/astarte_data_updater_plant
+      dockerfile: ./Dockerfile
     env_file:
       - ./compose.env
     environment:

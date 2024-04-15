@@ -1091,4 +1091,20 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
     )
     |> Enum.to_list()
   end
+
+  def retrieve_endpoint_for_interface!(client, interface_id, endpoint_id) do
+    endpoints_with_type_statement = """
+    SELECT value_type, endpoint
+    FROM endpoints
+    WHERE interface_id=:interface_id and endpoint_id=:endpoint_id  ALLOW FILTERING
+    """
+
+    endpoint_query =
+      DatabaseQuery.new()
+      |> DatabaseQuery.statement(endpoints_with_type_statement)
+      |> DatabaseQuery.put(:interface_id, interface_id)
+      |> DatabaseQuery.put(:endpoint_id, endpoint_id)
+
+    DatabaseQuery.call!(client, endpoint_query)
+  end
 end

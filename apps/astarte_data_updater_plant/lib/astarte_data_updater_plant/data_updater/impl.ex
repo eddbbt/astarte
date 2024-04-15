@@ -1522,6 +1522,7 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Impl do
 
   def handle_control(state, "/emptyCache", _payload, message_id, timestamp) do
     Logger.debug("Received /emptyCache")
+    IO.inspect("Received /emptyCache")
 
     {:ok, db_client} = Database.connect(realm: state.realm)
 
@@ -2710,6 +2711,8 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Impl do
          db_client,
          %InterfaceDescriptor{type: :properties, ownership: :server} = interface_descriptor
        ) do
+    IO.inspect("gather_interface_properties")
+
     reduce_interface_mapping(mappings, interface_descriptor, [], fn mapping, i_acc ->
       Queries.retrieve_endpoint_values(db_client, device_id, interface_descriptor, mapping)
       |> Enum.reduce(i_acc, fn [{:path, path}, {_, _value}], acc ->
@@ -2748,12 +2751,23 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Impl do
          db_client,
          %InterfaceDescriptor{type: :properties, ownership: :server} = interface_descriptor
        ) do
+    IO.inspect("resend_all_interface_properties")
     encoded_device_id = Device.encode_device_id(device_id)
 
     each_interface_mapping(mappings, interface_descriptor, fn mapping ->
+      IO.inspect(mapping)
+
       Queries.retrieve_endpoint_values(db_client, device_id, interface_descriptor, mapping)
       |> Enum.reduce_while(:ok, fn [{:path, path}, {_, value}], _acc ->
-        case send_value(realm, encoded_device_id, interface_descriptor.name, path, value) do
+        case send_value(
+               db_client,
+               realm,
+               encoded_device_id,
+               interface_descriptor,
+               path,
+               value,
+               mapping.endpoint_id
+             ) do
           {:ok, _bytes} ->
             # TODO: use the returned bytes count in stats
             {:cont, :ok}
@@ -2800,7 +2814,31 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Impl do
     end
   end
 
-  defp send_value(realm, device_id_string, interface_name, path, value) do
+  defp send_value(
+         db_client,
+         realm,
+         device_id_string,
+         %{name: interface_name} = interface_descriptor,
+         path,
+         value,
+         endpoint_id
+       ) do
+    mapping =
+      Queries.retrieve_endpoint_for_interface!(
+        db_client,
+        interface_descriptor.interface_id,
+        endpoint_id
+      )
+
+    value =
+      if value == nil &&
+           Integer.to_string(mapping[0][:value_type])
+           |> String.contains?(["2", "4", "6", "8", "10", "12", "14"]) do
+        []
+      else
+        value
+      end
+
     topic = "#{realm}/#{device_id_string}/#{interface_name}#{path}"
     encapsulated_value = %{v: value}
 

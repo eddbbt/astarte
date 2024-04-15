@@ -101,6 +101,22 @@ defmodule Astarte.AppEngine.API.Device.Queries do
     DatabaseQuery.call!(client, endpoint_query)
   end
 
+  def retrieve_endpoint_for_interface!(client, interface_id, endpoint_string) do
+    endpoints_with_type_statement = """
+    SELECT value_type, endpoint
+    FROM endpoints
+    WHERE interface_id=:interface_id and endpoint=:endpoint_string
+    """
+
+    endpoint_query =
+      DatabaseQuery.new()
+      |> DatabaseQuery.statement(endpoints_with_type_statement)
+      |> DatabaseQuery.put(:interface_id, interface_id)
+      |> DatabaseQuery.put(:endpoint_string, endpoint_string)
+
+    DatabaseQuery.call!(client, endpoint_query)
+  end
+
   def retrieve_mapping(db_client, interface_id, endpoint_id) do
     mapping_statement = """
     SELECT endpoint, value_type, reliability, retention, database_retention_policy,
@@ -133,6 +149,13 @@ defmodule Astarte.AppEngine.API.Device.Queries do
       else
         ""
       end
+
+    IO.inspect(Astarte.Core.CQLUtils.type_to_db_column_name(value_type))
+
+    IO.inspect(
+      "SELECT path, #{Astarte.Core.CQLUtils.type_to_db_column_name(value_type)} #{metadata_column} FROM #{table_name}" <>
+        " WHERE device_id=:device_id AND interface_id=:interface_id AND endpoint_id=:endpoint_id;"
+    )
 
     # TODO: should we filter on path for performance reason?
     # TODO: probably we should sanitize also table_name: right now it is stored on database

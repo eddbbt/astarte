@@ -179,7 +179,6 @@ defmodule Astarte.AppEngine.API.Device do
            DeviceQueries.interface_version(realm_name, device_id, interface),
          {:ok, interface_row} <-
            InterfaceQueries.retrieve_interface_row(realm_name, interface, major_version) do
-
       do_get_interface_values!(
         client,
         device_id,
@@ -862,7 +861,9 @@ defmodule Astarte.AppEngine.API.Device do
   defp do_get_interface_values!(client, device_id, :individual, interface_row, opts) do
     endpoint_rows =
       Queries.retrieve_all_endpoint_ids_for_interface!(client, interface_row[:interface_id])
-IO.inspect(endpoint_rows)
+
+    IO.inspect(endpoint_rows)
+
     values_map =
       Enum.reduce(endpoint_rows, %{}, fn endpoint_row, values ->
         # TODO: we can do this by using just one query without any filter on the endpoint
@@ -878,11 +879,13 @@ IO.inspect(endpoint_rows)
             "/",
             opts
           )
-          IO.inspect(value)
+
+        IO.inspect(value)
         Map.merge(values, value)
       end)
-      IO.inspect(values_map)
-      IO.inspect(MapTree.inflate_tree(values_map))
+
+    IO.inspect(values_map)
+    IO.inspect(MapTree.inflate_tree(values_map))
     {:ok, %InterfaceValues{data: MapTree.inflate_tree(values_map)}}
   end
 
@@ -1322,7 +1325,7 @@ IO.inspect(endpoint_rows)
          path,
          opts
        ) do
-
+    IO.inspect("retrieve_endpoint_values")
 
     rows =
       Queries.all_properties_for_endpoint!(
@@ -1332,6 +1335,10 @@ IO.inspect(endpoint_rows)
         endpoint_row,
         endpoint_id
       )
+
+    IO.inspect("**************************")
+    IO.inspect(rows)
+    IO.inspect("**************************")
 
     values =
       Enum.reduce(rows, %{}, fn row, values_map ->
@@ -1352,23 +1359,26 @@ IO.inspect(endpoint_rows)
           values_map
         end
       end)
-   mapping =
-          Queries.retrieve_mapping(
-            client,
-            interface_row[:interface_id],
-            endpoint_row[:endpoint_id]
-          )
+
+    mapping =
+      Queries.retrieve_mapping(
+        client,
+        interface_row[:interface_id],
+        endpoint_row[:endpoint_id]
+      )
+
     values =
-      if values[String.replace(mapping.endpoint, "/", "")]==nil && Integer.to_string(endpoint_row[:value_type])
-         |> String.contains?(["2", "4", "6", "8", "10", "12", "14"]) do
-
-
+      if values[String.replace(mapping.endpoint, "/", "")] == nil &&
+           Integer.to_string(endpoint_row[:value_type])
+           |> String.contains?(["2", "4", "6", "8", "10", "12", "14"]) do
         Map.put(values, String.replace(mapping.endpoint, "/", ""), [])
       else
         values
       end
 
-    IO.inspect(values)
+    # IO.inspect("**************************")
+    # IO.inspect(values)
+    # IO.inspect("**************************")
 
     values
   end
