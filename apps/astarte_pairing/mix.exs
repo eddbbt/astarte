@@ -69,8 +69,7 @@ defmodule Astarte.Pairing.Mixfile do
     [
       {:astarte_core, github: "astarte-platform/astarte_core"},
       {:astarte_data_access, github: "astarte-platform/astarte_data_access"},
-      {:astarte_rpc, github: "astarte-platform/astarte_rpc"}
-    ]
+      {:astarte_rpc, github: "eddbbt/astarte_rpc", branch: "quorum_queue"}    ]
   end
 
   # Run "mix help deps" to learn about dependencies.
