@@ -168,8 +168,8 @@ defmodule Astarte.TriggerEngine.AMQPConsumer.AMQPMessageConsumer do
     routing_key = generate_routing_key(realm_name, policy.name)
 
     with :ok <- @adapter.qos(channel, prefetch_count: Config.amqp_consumer_prefetch_count!()),
-         :ok <- @adapter.declare_exchange(channel, exchange_name, type: :direct, durable: true),
-         {:ok, _queue} <- @adapter.declare_queue(channel, queue_name, durable: true),
+         :ok <- @adapter.declare_exchange(channel, exchange_name, [type: :direct, durable: true, arguments: ["x-queue-type": "quorum"] ]),
+         {:ok, _queue} <- @adapter.declare_queue(channel, queue_name, [durable: true, arguments: ["x-queue-type": "quorum"] ] ),
          :ok <-
            @adapter.queue_bind(
              channel,

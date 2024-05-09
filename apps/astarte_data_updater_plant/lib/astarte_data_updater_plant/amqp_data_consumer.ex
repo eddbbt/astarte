@@ -226,7 +226,7 @@ defmodule Astarte.DataUpdaterPlant.AMQPDataConsumer do
     %State{queue_name: queue_name} = state
 
     with :ok <- @adapter.qos(channel, prefetch_count: Config.consumer_prefetch_count!()),
-         {:ok, _queue} <- @adapter.declare_queue(channel, queue_name, durable: true),
+         {:ok, _queue} <- @adapter.declare_queue(channel, queue_name, [durable: true, arguments: ["x-queue-type": "quorum"] ]),
          {:ok, _consumer_tag} <- @adapter.consume(channel, queue_name, self()) do
       ref = Process.monitor(channel_pid)
 

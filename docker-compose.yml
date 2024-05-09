@@ -246,7 +246,7 @@ services:
 
   # VerneMQ
   vernemq:
-    image: astarte/vernemq:snapshot
+    image: astarte/vernemq:local
     env_file:
       - ./compose.env
     environment:
