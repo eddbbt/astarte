@@ -54,6 +54,7 @@ defmodule Astarte.Housekeeping.API.RPC.Housekeeping do
         },
         opts
       ) do
+        IO.inspect(@destination)
     %CreateRealm{
       realm: realm_name,
       async_operation: Keyword.get(opts, :async_operation, true),
@@ -63,6 +64,7 @@ defmodule Astarte.Housekeeping.API.RPC.Housekeeping do
       device_registration_limit: device_registration_limit,
       datastream_maximum_storage_retention: datastream_maximum_storage_retention
     }
+    |> IO.inspect()
     |> encode_call(:create_realm)
     |> @rpc_client.rpc_call(@destination, Config.rpc_timeout!())
     |> decode_reply()
@@ -90,8 +92,11 @@ defmodule Astarte.Housekeeping.API.RPC.Housekeeping do
       datastream_maximum_storage_retention: datastream_maximum_storage_retention
     }
     |> encode_call(:create_realm)
+    |> IO.inspect()
     |> @rpc_client.rpc_call(@destination)
+    |> IO.inspect()
     |> decode_reply()
+    |> IO.inspect()
     |> extract_reply()
   end
 

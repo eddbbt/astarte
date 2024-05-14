@@ -100,7 +100,7 @@ defmodule Astarte.DataUpdaterPlant.AMQPTestEventsConsumer do
          Process.monitor(conn.pid),
          {:ok, chan} <- Channel.open(conn),
          :ok <-
-           Exchange.declare(chan, AMQPTestHelper.events_exchange_name(), :direct,  [ durable: true, arguments: ["x-queue-type": "quorum"] ]),
+           Exchange.declare(chan, AMQPTestHelper.events_exchange_name(), :direct,  durable: true ),
          {:ok, _queue} <-
            Queue.declare(
              chan,

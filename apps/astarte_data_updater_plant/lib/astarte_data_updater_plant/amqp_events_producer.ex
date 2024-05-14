@@ -65,7 +65,7 @@ defmodule Astarte.DataUpdaterPlant.AMQPEventsProducer do
   def handle_call({:declare_exchange, exchange}, _from, chan) do
     # TODO: we need to decide who is responsible of deleting the exchange once it is
     # no longer needed
-    reply = @adapter.declare_exchange(chan, exchange, [ type: :direct, durable: true, arguments: ["x-queue-type": "quorum"] ])
+    reply = @adapter.declare_exchange(chan, exchange,  type: :direct, durable: true )
 
     {:reply, reply, chan}
   end

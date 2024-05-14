@@ -168,7 +168,7 @@ defmodule Astarte.TriggerEngine.AMQPConsumer.AMQPMessageConsumer do
     routing_key = generate_routing_key(realm_name, policy.name)
 
     with :ok <- @adapter.qos(channel, prefetch_count: Config.amqp_consumer_prefetch_count!()),
-         :ok <- @adapter.declare_exchange(channel, exchange_name, [type: :direct, durable: true, arguments: ["x-queue-type": "quorum"] ]),
+         :ok <- @adapter.declare_exchange(channel, exchange_name, type: :direct, durable: true),
          {:ok, _queue} <- @adapter.declare_queue(channel, queue_name, [durable: true, arguments: ["x-queue-type": "quorum"] ] ),
          :ok <-
            @adapter.queue_bind(
@@ -176,7 +176,7 @@ defmodule Astarte.TriggerEngine.AMQPConsumer.AMQPMessageConsumer do
              queue_name,
              exchange_name,
              routing_key: routing_key,
-             arguments: [{"x-queue-mode", :longstr, "lazy"} | generate_policy_x_args(policy)]
+             arguments: [ generate_policy_x_args(policy)]
            ),
          {:ok, _consumer_tag} <- @adapter.consume(channel, queue_name, self()) do
       ref = Process.monitor(channel_pid)

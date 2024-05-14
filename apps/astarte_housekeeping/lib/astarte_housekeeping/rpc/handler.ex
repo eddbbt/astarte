@@ -100,6 +100,7 @@ defmodule Astarte.Housekeeping.RPC.Handler do
           }}
        ) do
     with {:ok, false} <- Astarte.Housekeeping.Engine.is_realm_existing(realm),
+    IO.inspect("realm does not exists, lets go"),
          datacenter_replication_factors_map = Enum.into(datacenter_replication_factors, %{}),
          :ok <-
            Engine.create_realm(
