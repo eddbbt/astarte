@@ -8,8 +8,11 @@ services:
       - ./compose.env
     restart: on-failure
     depends_on:
-      - "haproxy"
       - "scylla"
+      - "haproxy" 
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3"
 
   astarte-housekeeping-api:
     image: astarte/astarte_housekeeping_api:snapshot
@@ -25,8 +28,11 @@ services:
         target: /keys/housekeeping_public.pem
     restart: on-failure
     depends_on:
-      - "haproxy"
       - "traefik"
+      - "haproxy" 
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.astarte-housekeeping-api.rule=Host(`api.astarte.localhost`)"
@@ -46,8 +52,11 @@ services:
       - ./compose.env
     restart: on-failure
     depends_on:
-      - "haproxy"
       - "scylla"
+      - "haproxy" 
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3"
 
   astarte-realm-management-api:
     image: astarte/astarte_realm_management_api:snapshot
@@ -57,8 +66,11 @@ services:
       - ./compose.env
     restart: on-failure
     depends_on:
-      - "haproxy"
       - "traefik"
+      - "haproxy" 
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.astarte-realm-management-api.rule=Host(`api.astarte.localhost`)"
@@ -80,8 +92,11 @@ services:
       PAIRING_CFSSL_URL: "http://cfssl:8080"
     restart: on-failure
     depends_on:
-      - "haproxy"
       - "scylla"
+      - "haproxy" 
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3"
 
   astarte-pairing-api:
     image: astarte/astarte_pairing_api:snapshot
@@ -91,7 +106,10 @@ services:
       - ./compose.env
     restart: on-failure
     depends_on:
-      - "haproxy"
+      - "haproxy" 
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3"
       - "traefik"
     labels:
       - "traefik.enable=true"
@@ -115,6 +133,9 @@ services:
     restart: on-failure
     depends_on:
       - "haproxy"
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3"
       - "scylla"
       - "traefik"
     labels:
@@ -145,6 +166,9 @@ services:
     depends_on:
       - "haproxy"
       - "scylla"
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3"
 
   astarte-trigger-engine:
     image: astarte/astarte_trigger_engine:snapshot
@@ -167,6 +191,10 @@ services:
       - "astarte-realm-management-api"
       - "astarte-appengine-api"
       - "traefik"
+      - "haproxy" 
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3" 
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.astarte-dashboard.rule=Host(`dashboard.astarte.localhost`)"
@@ -179,6 +207,10 @@ services:
     depends_on:
       - "astarte-appengine-api"
       - "traefik"
+      - "haproxy" 
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3" 
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.astarte-grafana.rule=Host(`grafana.astarte.localhost`)"
@@ -222,39 +254,49 @@ services:
 
   # RabbitMQ
   rabbitmq1:
+    restart: always
     image: rabbitmq:3.13.2-management
     hostname: rabbitmq1
+    volumes:
+      - ./cluster-entrypoint.sh:/usr/local/bin/cluster-entrypoint.sh
+      - ./.erlang.cookie:/var/lib/rabbitmq/.erlang.cookie
     environment:
       - RABBITMQ_ERLANG_COOKIE=${RABBITMQ_ERLANG_COOKIE}
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
       - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
+    entrypoint: /usr/local/bin/cluster-entrypoint.sh
 
   rabbitmq2:
+    restart: always
     image: rabbitmq:3.13.2-management
     hostname: rabbitmq2
     depends_on:
       - rabbitmq1
     environment:
       - RABBITMQ_ERLANG_COOKIE=${RABBITMQ_ERLANG_COOKIE}
+      - JOIN_CLUSTER_HOST=rabbitmq1
     volumes:
       - ./cluster-entrypoint.sh:/usr/local/bin/cluster-entrypoint.sh
       - ./.erlang.cookie:/var/lib/rabbitmq/.erlang.cookie
     entrypoint: /usr/local/bin/cluster-entrypoint.sh
 
   rabbitmq3:
+    restart: always
     image: rabbitmq:3.13.2-management
     hostname: rabbitmq3
     depends_on:
       - rabbitmq1
     environment:
       - RABBITMQ_ERLANG_COOKIE=${RABBITMQ_ERLANG_COOKIE}
+      - JOIN_CLUSTER_HOST=rabbitmq1
     volumes:
       - ./cluster-entrypoint.sh:/usr/local/bin/cluster-entrypoint.sh
       - ./.erlang.cookie:/var/lib/rabbitmq/.erlang.cookie
     entrypoint: /usr/local/bin/cluster-entrypoint.sh
     
   haproxy:
+    restart: always
     image: haproxy:1.7
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
@@ -301,7 +343,10 @@ services:
       - ./compose/vernemq-certs:/etc/ssl/vernemq-certs
     depends_on:
       - "cfssl"
-      - "haproxy"
+      - "haproxy" 
+      - "rabbitmq1" 
+      - "rabbitmq2" 
+      - "rabbitmq3" 
       - "traefik"
     # Ensure we wait for rabbit and cfssl
     command: wait-for haproxy:5672 -t 90 -- wait-for cfssl:8080 -t 90 -- /opt/vernemq/bin/vernemq.sh
