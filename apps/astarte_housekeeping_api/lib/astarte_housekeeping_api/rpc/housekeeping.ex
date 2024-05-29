@@ -54,7 +54,9 @@ defmodule Astarte.Housekeeping.API.RPC.Housekeeping do
         },
         opts
       ) do
+        IO.inspect("@@@@@@@@@@@@@@@@@@@@@@@@")
         IO.inspect(@destination)
+        IO.inspect("@@@@@@@@@@@@@@@@@@@@@@@@")
     %CreateRealm{
       realm: realm_name,
       async_operation: Keyword.get(opts, :async_operation, true),

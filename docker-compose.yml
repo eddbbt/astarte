@@ -283,7 +283,7 @@ services:
 
   # VerneMQ
   vernemq:
-    image: astarte/vernemq:local
+    image: astarte_verne:latest
     env_file:
       - ./compose.env
     environment:
