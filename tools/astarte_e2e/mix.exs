@@ -53,7 +53,7 @@ defmodule AstarteE2E.MixProject do
       {:phoenix_gen_socket_client, "~> 4.0"},
       {:websocket_client, "~> 1.5"},
       {:jason, "~> 1.0"},
-      {:plug_cowboy, "~> 2.0"},
+      {:plug_cowboy, "~> 2.1"},
       {:skogsra, "~> 2.3"},
       {:telemetry, "~> 0.4"},
       {:telemetry_metrics_prometheus_core, "~> 0.4"},

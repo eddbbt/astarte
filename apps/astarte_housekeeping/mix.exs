@@ -83,7 +83,7 @@ defmodule Astarte.Housekeeping.Mixfile do
       {:excoveralls, "~> 0.15", only: :test},
       {:dialyxir, "~> 1.0", only: [:dev, :ci], runtime: false},
       {:plug_cowboy, "~> 2.1"},
-      {:skogsra, "~> 2.2"},
+      {:skogsra, "~> 2.3"},
       {:pretty_log, "~> 0.1"},
       {:telemetry_metrics_prometheus_core, "~> 0.4"},
       {:telemetry_metrics, "~> 0.4"},
