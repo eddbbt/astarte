@@ -23,7 +23,7 @@ defmodule AstarteE2E.MixProject do
     [
       app: :astarte_e2e,
       version: "1.3.0-dev",
-      elixir: "~> 1.15",
+      elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       dialyzer_cache_directory: dialyzer_cache_directory(Mix.env()),
       deps: deps()
@@ -68,7 +68,7 @@ defmodule AstarteE2E.MixProject do
       {:dialyzex, github: "Comcast/dialyzex", only: [:dev, :ci]},
       # Workaround for Elixir 1.15 / ssl_verify_fun issue
       # See also: https://github.com/deadtrickster/ssl_verify_fun.erl/pull/27
-      {:ssl_verify_fun, "~> 1.1.0", manager: :rebar3, override: true}
+      # {:ssl_verify_fun, "~> 1.1.0", manager: :rebar3, override: true}
     ]
   end
 end

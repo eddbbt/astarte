@@ -5,7 +5,7 @@ defmodule AstarteExport.MixProject do
     [
       app: :astarte_export,
       version: "1.3.0-dev",
-      elixir: "~> 1.15",
+      elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
@@ -44,7 +44,7 @@ defmodule AstarteExport.MixProject do
       {:dialyzex, github: "Comcast/dialyzex", only: [:dev, :ci]},
       # Workaround for Elixir 1.15 / ssl_verify_fun issue
       # See also: https://github.com/deadtrickster/ssl_verify_fun.erl/pull/27
-      {:ssl_verify_fun, "~> 1.1.0", manager: :rebar3, override: true}
+      # {:ssl_verify_fun, "~> 1.1.0", manager: :rebar3, override: true}
     ]
   end
 end

@@ -22,7 +22,7 @@ defmodule Astarte.Pairing.API.Mixfile do
   def project do
     [
       app: :astarte_pairing_api,
-      elixir: "~> 1.15",
+      elixir: "~> 1.17",
       version: "1.3.0-dev",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -100,7 +100,7 @@ defmodule Astarte.Pairing.API.Mixfile do
       {:observer_cli, "~> 1.5"},
       # Workaround for Elixir 1.15 / ssl_verify_fun issue
       # See also: https://github.com/deadtrickster/ssl_verify_fun.erl/pull/27
-      {:ssl_verify_fun, "~> 1.1.0", manager: :rebar3, override: true}
+      # {:ssl_verify_fun, "~> 1.1.0", manager: :rebar3, override: true}
     ]
   end
 end
