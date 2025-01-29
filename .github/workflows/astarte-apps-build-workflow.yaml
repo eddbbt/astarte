@@ -20,7 +20,7 @@ on:
   workflow_call:
 
 env:
-  elixir_version: "1.17"
+  elixir_version: "1.18"
   otp_version: "26.1"
 
 jobs:

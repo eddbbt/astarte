@@ -23,7 +23,7 @@ defmodule AstarteE2E.MixProject do
     [
       app: :astarte_e2e,
       version: "1.3.0-dev",
-      elixir: "~> 1.17",
+      elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       dialyzer_cache_directory: dialyzer_cache_directory(Mix.env()),
       deps: deps()

@@ -5,7 +5,7 @@ defmodule Astarte.Import.MixProject do
     [
       app: :astarte_import,
       version: "1.3.0-dev",
-      elixir: "~> 1.17",
+      elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
