@@ -43,7 +43,7 @@ defmodule AstarteDeviceFleetSimulator.MixProject do
       {:astarte_device, github: "astarte-platform/astarte-device-sdk-elixir"},
       {:skogsra, "~> 2.3"},
       {:logfmt, "~> 3.3"},
-      {:pretty_log, "~> 0.1"},
+      {:pretty_log, "~> 0.9"},
       {:elixir_uuid, "~> 1.2"},
       {:csv, "~> 3.2"}
     ]
