@@ -1,4 +1,4 @@
-FROM hexpm/elixir:1.18.2-erlang-26.2.5.7-ubuntu-jammy-20240808 as base
+FROM hexpm/elixir:1.18.2-erlang-26.2.5.7-debian-bullseye-20250203 as base
 
 # install build dependencies
 # --allow-releaseinfo-change allows to pull from 'oldstable'
@@ -12,7 +12,10 @@ RUN apt-get update --allow-releaseinfo-change -y && \
     apt-get clean && \
     rm -f /var/lib/apt/lists/*_*
 
-# Install hex
+RUN openssl version
+RUN whereis openssl 
+
+    # Install hex 
 RUN mix local.hex --force && \
     mix local.rebar --force && \
     mix hex.info
@@ -61,15 +64,25 @@ RUN if [ -f "./entrypoint.sh" ]; then \
 
 # Note: it is important to keep Debian versions in sync, 
 # or incompatibilities between libcrypto will happen
-FROM debian:bookworm-slim
+FROM debian:bullseye
 
 # Set the locale
 ENV LANG C.UTF-8
 
 # We need SSL
-RUN apt-get -qq update -y && \
+RUN apt-get -qq update --allow-releaseinfo-change -y && \
+# RUN apt-get -qq update -y && \
     apt-get -qq install \
     openssl \
+    ca-certificates \
+    && apt-get clean \
+    && rm -f /var/lib/apt/lists/*_*
+
+RUN openssl version
+# We need crypto
+RUN apt-get -qq update -y && \
+    apt-get -qq install \
+    erlang-dev erlang-crypto\
     ca-certificates \
     && apt-get clean \
     && rm -f /var/lib/apt/lists/*_*

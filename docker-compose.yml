@@ -1,6 +1,6 @@
 services:
   astarte-housekeeping:
-    image: astarte/astarte_housekeeping:snapshot
+    image: eddybabetto2/astarte_housekeeping:update-debian
     env_file:
       - ./.env
     restart: on-failure
@@ -9,7 +9,7 @@ services:
       - "scylla"
 
   astarte-housekeeping-api:
-    image: astarte/astarte_housekeeping_api:snapshot
+    image: eddybabetto2/astarte_housekeeping_api:update-debian
     env_file:
       - ./.env
     environment:
@@ -34,7 +34,7 @@ services:
       - "traefik.http.services.astarte-housekeeping-api.loadbalancer.server.port=4001"
 
   astarte-realm-management:
-    image: astarte/astarte_realm_management:snapshot
+    image: eddybabetto2/astarte_realm_management:update-debian
     env_file:
       - ./.env
     restart: on-failure
@@ -43,7 +43,7 @@ services:
       - "scylla"
 
   astarte-realm-management-api:
-    image: astarte/astarte_realm_management_api:snapshot
+    image: eddybabetto2/astarte_realm_management_api:update-debian
     env_file:
       - ./.env
     restart: on-failure
@@ -62,7 +62,7 @@ services:
       - "traefik.http.services.astarte-realm-management-api.loadbalancer.server.port=4000"
 
   astarte-pairing:
-    image: astarte/astarte_pairing:snapshot
+    image: eddybabetto2/astarte_pairing:update-debian
     env_file:
       - ./.env
     environment:
@@ -73,7 +73,7 @@ services:
       - "scylla"
 
   astarte-pairing-api:
-    image: astarte/astarte_pairing_api:snapshot
+    image: eddybabetto2/astarte_pairing_api:update-debian
     env_file:
       - ./.env
     restart: on-failure
@@ -92,7 +92,7 @@ services:
       - "traefik.http.services.astarte-pairing-api.loadbalancer.server.port=4003"
 
   astarte-appengine-api:
-    image: astarte/astarte_appengine_api:snapshot
+    image: eddybabetto2/astarte_appengine_api:update-debian
     env_file:
       - ./.env
     environment:
@@ -114,7 +114,7 @@ services:
       - "traefik.http.services.astarte-appengine-api.loadbalancer.server.port=4002"
 
   astarte-data-updater-plant:
-    image: astarte/astarte_data_updater_plant:snapshot
+    image: eddybabetto2/astarte_data_updater_plant:update-debian
     env_file:
       - ./.env
     environment:
@@ -130,7 +130,7 @@ services:
       - "scylla"
 
   astarte-trigger-engine:
-    image: astarte/astarte_trigger_engine:snapshot
+    image: eddybabetto2/astarte_trigger_engine:update-debian
     env_file:
       - ./.env
     environment:
@@ -141,7 +141,7 @@ services:
       - "scylla"
 
   astarte-dashboard:
-    image: astarte/astarte-dashboard:snapshot
+    image: eddybabetto2/astarte-dashboard:update-debian
     volumes:
       - ./compose/astarte-dashboard/config.json:/usr/share/nginx/html/user-config/config.json
     depends_on:
@@ -156,7 +156,7 @@ services:
       - "traefik.http.services.astarte-dashboard.loadbalancer.server.port=80"
 
   astarte-grafana:
-    image: astarte/grafana:snapshot
+    image: eddybabetto2/grafana:update-debian
     depends_on:
       - "astarte-appengine-api"
       - "traefik"
@@ -210,7 +210,7 @@ services:
 
   # CFSSL
   cfssl:
-    image: astarte/cfssl:1.5.0-astarte.4
+    image: eddybabetto2/cfssl:1.5.0-astarte.4
     volumes:
       - ./compose/cfssl-config:/config
       - cfssl-data:/data
@@ -227,7 +227,7 @@ services:
 
   # VerneMQ
   vernemq:
-    image: astarte/vernemq:snapshot
+    image: eddybabetto2/vernemq:update-debian
     env_file:
       - ./.env
     environment:

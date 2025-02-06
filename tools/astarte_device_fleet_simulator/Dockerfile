@@ -1,4 +1,4 @@
-FROM hexpm/elixir:1.18.2-erlang-26.2.5.7-ubuntu-jammy-20240808 as builder
+FROM hexpm/elixir:1.18.2-erlang-26.2.5.7-debian-bullseye-20250203 as builder
 
 # install build dependencies
 # --allow-releaseinfo-change allows to pull from 'oldstable'
