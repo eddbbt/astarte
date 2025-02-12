@@ -35,7 +35,7 @@ defmodule AstarteExport.MixProject do
 
   defp deps do
     [
-      {:xandra, "~> 0.19"},
+      {:xandra, "0.14.0"},
       {:astarte_core, "~> 1.2"},
       {:distillery, "~> 2.1.1"},
       {:pretty_log, "~> 0.1.0"},
