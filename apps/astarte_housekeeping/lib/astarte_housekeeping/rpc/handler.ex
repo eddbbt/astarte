@@ -23,7 +23,6 @@ defmodule Astarte.Housekeeping.RPC.Handler do
 
   alias Astarte.RPC.Protocol.Housekeeping.{
     Call,
-    CreateRealm,
     DeleteRealm,
     GenericErrorReply,
     GenericOkReply,
@@ -51,126 +50,6 @@ defmodule Astarte.Housekeeping.RPC.Handler do
 
   defp extract_call_tuple(%Call{call: call_tuple}) do
     {:ok, call_tuple}
-  end
-
-  # Here for retrocompatibility with old protos serialized with Exprotobuf
-  defp call_rpc({:create_realm, %CreateRealm{realm: ""}}) do
-    _ = Logger.warning("CreateRealm with empty realm.", tag: "rpc_create_nil_realm")
-    generic_error(:empty_name, "empty realm name")
-  end
-
-  # Here for retrocompatibility with old protos serialized with Exprotobuf
-  defp call_rpc({:create_realm, %CreateRealm{jwt_public_key_pem: ""}}) do
-    _ =
-      Logger.warning("CreateRealm with empty jwt_public_key_pem.",
-        tag: "rpc_create_nil_public_key"
-      )
-
-    generic_error(:empty_public_key, "empty jwt public key pem")
-  end
-
-  defp call_rpc({:create_realm, %CreateRealm{realm: nil}}) do
-    _ = Logger.warning("CreateRealm with empty realm.", tag: "rpc_create_nil_realm")
-    generic_error(:empty_name, "empty realm name")
-  end
-
-  defp call_rpc({:create_realm, %CreateRealm{jwt_public_key_pem: nil}}) do
-    _ =
-      Logger.warning("CreateRealm with empty jwt_public_key_pem.",
-        tag: "rpc_create_nil_public_key"
-      )
-
-    generic_error(:empty_public_key, "empty jwt public key pem")
-  end
-
-  defp call_rpc(
-         {:create_realm,
-          %CreateRealm{
-            realm: realm,
-            jwt_public_key_pem: pub_key,
-            replication_class: :NETWORK_TOPOLOGY_STRATEGY,
-            datacenter_replication_factors: datacenter_replication_factors,
-            device_registration_limit: device_registration_limit,
-            datastream_maximum_storage_retention: datastream_maximum_storage_retention,
-            async_operation: async
-          }}
-       ) do
-    with {:ok, false} <- Astarte.Housekeeping.Engine.is_realm_existing(realm),
-         datacenter_replication_factors_map = Enum.into(datacenter_replication_factors, %{}),
-         :ok <-
-           Engine.create_realm(
-             realm,
-             pub_key,
-             datacenter_replication_factors_map,
-             device_registration_limit,
-             datastream_maximum_storage_retention,
-             async: async
-           ) do
-      generic_ok(async)
-    else
-      # This comes from is_realm_existing
-      {:ok, true} ->
-        _ =
-          Logger.warning("CreateRealm with already existing realm.",
-            tag: "rpc_create_existing_realm",
-            realm: realm
-          )
-
-        generic_error(:existing_realm, "realm already exists")
-
-      {:error, {reason, details}} ->
-        generic_error(reason, details)
-
-      {:error, reason} ->
-        generic_error(reason)
-    end
-  end
-
-  defp call_rpc({:create_realm, %CreateRealm{replication_factor: 0} = call}) do
-    # Due to new proto3 defaults, if replication factor is not explictly set, it now defaults
-    # to 0 instead of nil. Hide this implementation detail to the outside world.
-    call_rpc({:create_realm, %{call | replication_factor: nil}})
-  end
-
-  defp call_rpc(
-         {:create_realm,
-          %CreateRealm{
-            realm: realm,
-            jwt_public_key_pem: pub_key,
-            replication_factor: replication_factor,
-            device_registration_limit: device_registration_limit,
-            datastream_maximum_storage_retention: datastream_maximum_storage_retention,
-            async_operation: async
-          }}
-       ) do
-    with {:ok, false} <- Astarte.Housekeeping.Engine.is_realm_existing(realm),
-         :ok <-
-           Engine.create_realm(
-             realm,
-             pub_key,
-             replication_factor,
-             device_registration_limit,
-             datastream_maximum_storage_retention,
-             async: async
-           ) do
-      generic_ok(async)
-    else
-      # This comes from is_realm_existing
-      {:ok, true} ->
-        _ =
-          Logger.warning("CreateRealm with already existing realm.",
-            tag: "rpc_create_existing_realm",
-            realm: realm
-          )
-
-        generic_error(:existing_realm, "realm already exists")
-
-      {:error, {reason, details}} ->
-        generic_error(reason, details)
-
-      {:error, reason} ->
-        generic_error(reason)
-    end
   end
 
   defp call_rpc({:update_realm, %UpdateRealm{} = call}) do
