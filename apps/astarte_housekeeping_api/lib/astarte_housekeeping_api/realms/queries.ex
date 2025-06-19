@@ -28,8 +28,8 @@ defmodule Astarte.Housekeeping.API.Realms.Queries do
   alias Astarte.DataAccess.CSystem
   alias Astarte.Housekeeping.API.Migrator
   alias Astarte.Housekeeping.API.Config
-  alias Astarte.Housekeeping.API.Realms.Realm, as: HKRealm
-  alias Astarte.DataAccess.KvStore
+  # alias Astarte.Housekeeping.API.Realms.Realm, as: HKRealm
+  # alias Astarte.DataAccess.KvStore
   require Logger
   @default_replication_factor 1
 

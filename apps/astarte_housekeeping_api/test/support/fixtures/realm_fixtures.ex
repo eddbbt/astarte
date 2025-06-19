@@ -17,6 +17,14 @@
 #
 defmodule Astarte.Housekeeping.API.Fixtures.Realm do
   alias Astarte.Housekeeping.API.Realms
+  alias Astarte.Housekeeping.Engine
+  alias Astarte.Housekeeping.API.Realms.Realm
+
+  alias Astarte.RPC.Protocol.Housekeeping.{
+    GenericOkReply,
+    GenericErrorReply,
+    Reply
+  }
 
   @pubkey """
   -----BEGIN PUBLIC KEY-----
@@ -36,9 +44,56 @@ defmodule Astarte.Housekeeping.API.Fixtures.Realm do
   def realm_fixture(attrs \\ %{}) do
     {:ok, realm} =
       attrs
+      |> Map.put_new_lazy(:realm_name, fn ->
+        "mytestrealm#{System.unique_integer([:positive])}"
+      end)
       |> Enum.into(@valid_attrs)
       |> Realms.create_realm()
 
+    # TODO: remove after the create_realm RPC removal
+    insert_realm!(realm)
     realm
+  end
+
+  # TODO: remove after the create_realm RPC removal
+  defp insert_realm!(realm) do
+    replication =
+      case realm.replication_class do
+        "SimpleStrategy" -> realm.replication_factor
+        "NetworkTopologyStrategy" -> realm.datacenter_replication_factors
+      end
+
+    case Astarte.Housekeeping.Mock.DB.put_realm(%Realm{
+           realm_name: realm.realm_name,
+           jwt_public_key_pem: realm.jwt_public_key_pem,
+           replication_factor: replication,
+           replication_class: realm.replication_class,
+           datacenter_replication_factors: replication,
+           device_registration_limit: realm.device_registration_limit,
+           datastream_maximum_storage_retention: realm.datastream_maximum_storage_retention
+         }) do
+      :ok ->
+        %GenericOkReply{async_operation: true}
+        |> encode_reply(:generic_ok_reply)
+        |> ok_wrap
+
+      {:error, reason} ->
+        generic_error(reason)
+        |> ok_wrap
+    end
+  end
+
+  defp generic_error(error_name) do
+    %GenericErrorReply{error_name: to_string(error_name)}
+    |> encode_reply(:generic_error_reply)
+  end
+
+  defp encode_reply(reply, reply_type) do
+    %Reply{reply: {reply_type, reply}}
+    |> Reply.encode()
+  end
+
+  defp ok_wrap(result) do
+    {:ok, result}
   end
 end

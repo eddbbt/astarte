@@ -34,7 +34,7 @@ defmodule Astarte.Housekeeping.API.Helpers.Database do
   @create_realms_table """
   CREATE TABLE :keyspace.realms (
     realm_name varchar,
-    device_registration_limit int,
+    device_registration_limit bigint,
 
     PRIMARY KEY (realm_name)
   )
@@ -80,12 +80,9 @@ defmodule Astarte.Housekeeping.API.Helpers.Database do
     pending_empty_cache boolean,
     total_received_msgs bigint,
     total_received_bytes bigint,
-    exchanged_bytes_by_interface map<frozen<tuple<ascii, int>>, bigint>,
-    exchanged_msgs_by_interface map<frozen<tuple<ascii, int>>, bigint>,
     last_credentials_request_ip inet,
     last_seen_ip inet,
-    attributes map<varchar, varchar>,
-    groups map<text, timeuuid>,
+
 
     PRIMARY KEY (device_id)
   )
@@ -124,8 +121,6 @@ defmodule Astarte.Housekeeping.API.Helpers.Database do
     reliability int,
     retention int,
     expiry int,
-    database_retention_ttl int,
-    database_retention_policy int,
     allow_unset boolean,
     explicit_timestamp boolean,
     description text,
@@ -235,50 +230,99 @@ defmodule Astarte.Housekeeping.API.Helpers.Database do
     u9/f1dNImWDuIPeLu8nEiuHlCMy02+YDu0wN2U1psPC7w6AFjv4uTg==
     -----END PUBLIC KEY-----
   """
+  @drop_kv_store """
+  DROP TABLE if exists :keyspace.kv_store
+  """
+  @add_replication_factor_column_for_realms_table """
+  ALTER TABLE :keyspace.realms ADD replication_factor varchar;
+  """
+  @drop_device_registration_limit_column_for_realms_table """
+  ALTER TABLE :keyspace.realms DROP device_registration_limit;
+  """
 
-  def setup!(realm_name) do
+  def setup(realm_name) do
+    setup_astarte_keyspace()
+    setup_realm_keyspace(realm_name)
+    insert_public_key(realm_name)
+
+    :ok
+  end
+
+  def setup_database_access(astarte_instance_id) do
+    Astarte.DataAccess.Config
+    |> Mimic.stub(:astarte_instance_id, fn -> {:ok, astarte_instance_id} end)
+    |> Mimic.stub(:astarte_instance_id!, fn -> astarte_instance_id end)
+  end
+
+  def setup_realm_keyspace(realm_name) do
     realm_keyspace = Realm.keyspace_name(realm_name)
-    execute!(realm_keyspace, @create_keyspace)
-    execute!(realm_keyspace, @create_devices_table)
-    execute!(realm_keyspace, @create_groups_table)
-    execute!(realm_keyspace, @create_names_table)
-    execute!(realm_keyspace, @create_kv_store)
-    execute!(realm_keyspace, @create_endpoints_table)
-    execute!(realm_keyspace, @create_simple_triggers_table)
-    execute!(realm_keyspace, @create_individual_properties_table)
-    execute!(realm_keyspace, @create_individual_datastreams_table)
-    execute!(realm_keyspace, @create_interfaces_table)
-    execute!(realm_keyspace, @create_deletion_in_progress_table)
+    execute(realm_keyspace, @create_keyspace)
+    execute(realm_keyspace, @create_devices_table)
+    execute(realm_keyspace, @create_names_table)
+    execute(realm_keyspace, @create_kv_store)
+    execute(realm_keyspace, @create_endpoints_table)
+    execute(realm_keyspace, @create_simple_triggers_table)
+    execute(realm_keyspace, @create_individual_properties_table)
+    execute(realm_keyspace, @create_individual_datastreams_table)
+    execute(realm_keyspace, @create_interfaces_table)
 
     astarte_keyspace = Realm.astarte_keyspace_name()
-    execute!(astarte_keyspace, @create_keyspace)
-    execute!(astarte_keyspace, @create_kv_store)
-    execute!(astarte_keyspace, @create_realms_table)
 
     %Realm{realm_name: realm_name}
-    |> Repo.insert!(prefix: astarte_keyspace)
+    |> Repo.insert(prefix: astarte_keyspace)
 
     :ok
   end
 
-  def teardown!(realm_name) do
-    realm_keyspace = Realm.keyspace_name(realm_name)
+  def setup_astarte_keyspace do
     astarte_keyspace = Realm.astarte_keyspace_name()
-
-    execute!(realm_keyspace, @drop_keyspace)
-    execute!(astarte_keyspace, @drop_keyspace)
+    execute(astarte_keyspace, @create_keyspace)
+    execute(astarte_keyspace, @create_kv_store)
+    execute(astarte_keyspace, @create_realms_table)
 
     :ok
   end
 
-  def insert_public_key!(realm_name) do
-    realm_keyspace = Realm.keyspace_name(realm_name)
+  def teardown(realm_name) do
+    teardown_astarte_keyspace()
+    teardown_realm_keyspace(realm_name)
 
-    execute!(realm_keyspace, @insert_public_key, %{pem: @jwt_public_key_pem})
+    :ok
   end
 
-  defp execute!(keyspace, query, params \\ [], opts \\ []) do
+  def teardown_realm_keyspace(realm_name) do
+    realm_keyspace = Realm.keyspace_name(realm_name)
+    execute(realm_keyspace, @drop_keyspace)
+    :ok
+  end
+
+  def teardown_astarte_keyspace do
+    astarte_keyspace = Realm.astarte_keyspace_name()
+    execute(astarte_keyspace, @drop_keyspace)
+    :ok
+  end
+
+  def destroy_astarte_kv_store_table!() do
+    keyspace = Realm.astarte_keyspace_name()
+    execute(keyspace, @drop_kv_store)
+  end
+
+  def insert_public_key(realm_name) do
+    realm_keyspace = Realm.keyspace_name(realm_name)
+
+    execute(realm_keyspace, @insert_public_key, %{"pem" => @jwt_public_key_pem})
+  end
+
+  defp execute(keyspace, query, params \\ [], opts \\ []) do
     String.replace(query, ":keyspace", keyspace)
-    |> Repo.query!(params, opts)
+    |> Repo.query(params, opts)
+  end
+
+  def edit_with_outdated_column_for_astarte_realms_table!() do
+    keyspace = Realm.astarte_keyspace_name()
+
+    execute(keyspace, @add_replication_factor_column_for_realms_table)
+
+    execute(keyspace, @drop_device_registration_limit_column_for_realms_table)
   end
 end
