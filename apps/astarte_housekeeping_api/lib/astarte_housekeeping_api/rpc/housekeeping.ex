@@ -19,7 +19,6 @@
 defmodule Astarte.Housekeeping.API.RPC.Housekeeping do
   alias Astarte.RPC.Protocol.Housekeeping.{
     Call,
-    CreateRealm,
     DeleteRealm,
     GenericErrorReply,
     GenericOkReply,
@@ -35,6 +34,7 @@ defmodule Astarte.Housekeeping.API.RPC.Housekeeping do
 
   alias Astarte.Housekeeping.API.Config
   alias Astarte.Housekeeping.API.Realms.Realm
+  alias Astarte.Housekeeping.API.Realms.Queries
 
   @rpc_client Config.rpc_client!()
   @destination Astarte.RPC.Protocol.Housekeeping.amqp_queue()
@@ -50,19 +50,14 @@ defmodule Astarte.Housekeeping.API.RPC.Housekeeping do
         },
         opts
       ) do
-    %CreateRealm{
-      realm: realm_name,
-      async_operation: Keyword.get(opts, :async_operation, true),
-      jwt_public_key_pem: pem,
-      replication_class: :SIMPLE_STRATEGY,
-      replication_factor: replication_factor,
-      device_registration_limit: device_registration_limit,
-      datastream_maximum_storage_retention: datastream_maximum_storage_retention
-    }
-    |> encode_call(:create_realm)
-    |> @rpc_client.rpc_call(@destination, Config.rpc_timeout!())
-    |> decode_reply()
-    |> extract_reply()
+    Queries.create_realm(
+      realm_name,
+      pem,
+      replication_factor,
+      device_registration_limit,
+      datastream_maximum_storage_retention,
+      opts
+    )
   end
 
   def create_realm(
@@ -76,19 +71,16 @@ defmodule Astarte.Housekeeping.API.RPC.Housekeeping do
         },
         opts
       ) do
-    %CreateRealm{
-      realm: realm_name,
-      async_operation: Keyword.get(opts, :async_operation, true),
-      jwt_public_key_pem: pem,
-      replication_class: :NETWORK_TOPOLOGY_STRATEGY,
-      datacenter_replication_factors: Enum.to_list(replication_factors_map),
-      device_registration_limit: device_registration_limit,
-      datastream_maximum_storage_retention: datastream_maximum_storage_retention
-    }
-    |> encode_call(:create_realm)
-    |> @rpc_client.rpc_call(@destination)
-    |> decode_reply()
-    |> extract_reply()
+    datacenter_replication_factors_map = Enum.to_list(replication_factors_map) |> Enum.into(%{})
+
+    Queries.create_realm(
+      realm_name,
+      pem,
+      datacenter_replication_factors_map,
+      device_registration_limit,
+      datastream_maximum_storage_retention,
+      opts
+    )
   end
 
   def update_realm(%Realm{
