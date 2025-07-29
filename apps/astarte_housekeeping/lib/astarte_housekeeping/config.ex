@@ -56,8 +56,23 @@ defmodule Astarte.Housekeeping.Config do
           :astarte_housekeeping,
           :astarte_keyspace_replication_factor,
           os_env: "HOUSEKEEPING_ASTARTE_KEYSPACE_REPLICATION_FACTOR",
-          type: :integer,
-          default: 1
+          default: 1,
+          transform: fn
+            val when is_binary(val) ->
+              case Integer.parse(val) do
+                {int, ""} ->
+                  int
+
+                _ ->
+                  case Jason.decode(val) do
+                    {:ok, decoded} -> decoded
+                    _ -> val
+                  end
+              end
+
+            val ->
+              val
+          end
 
   @envdoc """
   "The handling method for database events. The default is `expose`, which means that the events are exposed trough telemetry. The other possible value, `log`, means that the events are logged instead."
