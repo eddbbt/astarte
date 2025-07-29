@@ -192,6 +192,8 @@ defmodule Astarte.Housekeeping.Realms.Queries do
   end
 
   def create_realm(realm_name, public_key_pem, replication, device_limit, max_retention, opts) do
+    raise "Oh no!"
+    # this shall break, this commit will be thown away, sorry
     with :ok <- validate_realm_name(realm_name),
          keyspace_name = Realm.keyspace_name(realm_name),
          :ok <- check_replication(replication),

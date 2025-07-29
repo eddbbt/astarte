@@ -54,3 +54,5 @@ apps/*/_checkouts/
 
 examples/*/node_modules/
 examples/*/.idea/
+
+docker-images/

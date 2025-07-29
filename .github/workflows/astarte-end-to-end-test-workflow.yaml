@@ -43,6 +43,12 @@ jobs:
       with:
         otp-version: ${{ env.otp_version }}
         elixir-version: ${{ env.elixir_version }}
+    - uses: actions/download-artifact@v4
+      with:
+        name: docker-images
+        path: docker-images
+    - name: save images from artifacts
+      run: for tar in docker-images/*.tar; do echo "Loading $tar"; docker load -i "$tar"; done
     - name: Start all Astarte services
       run: docker compose up -d
     - name: Wait for Astarte to come up

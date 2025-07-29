@@ -14,7 +14,16 @@ jobs:
     - name: Build Astarte containers
       uses: docker/bake-action@v6
       with:
-        files: docker-compose.yml
+        files: |
+          docker-compose.yml
+          docker-bake.hcl
         set: |
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
+    - name: save images
+      run: mkdir -p docker-images && for image in $(docker compose config | awk '/image:/{print $2}'); do safe_name=$(echo "$image" | tr '/:.' '_'); echo "Saving $image -> docker-images/${safe_name}.tar"; docker save "$image" -o "docker-images/${safe_name}.tar"; done
+    - name: Upload image as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-images
+        path: docker-images
