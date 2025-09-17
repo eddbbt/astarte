@@ -1,11 +1,15 @@
 FROM hexpm/elixir:1.15.7-erlang-26.1-debian-bookworm-20230612-slim AS builder
 
+
 # install build dependencies
 # --allow-releaseinfo-change allows to pull from 'oldstable'
 RUN apt-get update --allow-releaseinfo-change -y && apt-get install -y build-essential git \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 WORKDIR /app
+
+COPY apps/astarte_data_updater_plant/ ./
+COPY libs/ ../libs/
 
 # Install hex
 RUN mix local.hex --force && \
@@ -18,11 +22,11 @@ ARG BUILD_ENV=prod
 ENV MIX_ENV=$BUILD_ENV
 
 # Cache elixir deps
-ADD mix.exs mix.lock ./
+ADD apps/astarte_data_updater_plant/mix.exs ./
+ADD apps/astarte_data_updater_plant/mix.lock ./
 RUN mix do deps.get, deps.compile
 
-# Add all the rest
-ADD . .
+ADD apps/astarte_data_updater_plant/ .
 
 # Build and release
 RUN mix do compile, release

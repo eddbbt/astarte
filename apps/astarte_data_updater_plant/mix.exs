@@ -74,7 +74,8 @@ defmodule Astarte.DataUpdaterPlant.Mixfile do
       {:astarte_realm_management,
        path: "../astarte_realm_management", only: [:dev, :test], runtime: false},
       {:astarte_housekeeping,
-       path: "../astarte_housekeeping", only: [:dev, :test], env: :dev, runtime: false}
+       path: "../astarte_housekeeping", only: [:dev, :test], env: :dev, runtime: false},
+      {:astarte_events, path: "../../libs/astarte_events"}
     ]
   end
 

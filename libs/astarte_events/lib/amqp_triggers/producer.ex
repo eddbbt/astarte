@@ -16,12 +16,12 @@
 # limitations under the License.
 #
 
-defmodule Astarte.Events.Producer do
+defmodule Astarte.Events.AMQPTriggers.Producer do
   use GenServer, restart: :transient
   require Logger
 
   alias AMQP.{Channel, Connection}
-  alias Astarte.Events.Config
+  alias Astarte.Events.AMQPTriggers.Config
 
   @adapter Config.amqp_adapter!()
 
@@ -64,7 +64,6 @@ defmodule Astarte.Events.Producer do
 
   @impl true
   def handle_call({:publish, exchange, routing_key, payload, opts}, _from, {conn, chan, realm}) do
-
     dbg(@adapter)
     reply = @adapter.publish(chan, exchange, routing_key, payload, opts)
     {:reply, reply, {conn, chan, realm}, 60_000}
@@ -108,7 +107,7 @@ defmodule Astarte.Events.Producer do
 
   defp init_producer(realm_name) do
     amqp_consumer_opts =
-      Astarte.Events.Config.amqp_consumer_options!()
+      Config.amqp_consumer_options!()
       |> Keyword.put(:virtual_host, vhost_name(realm_name))
       |> dbg()
 

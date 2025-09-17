@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-defmodule Astarte.Events.Config do
+defmodule Astarte.Events.AMQPTriggers.Config do
   use Skogsra
   alias Astarte.DataAccess.Config, as: DataAccessConfig
 
@@ -168,6 +168,7 @@ defmodule Astarte.Events.Config do
       Keyword.put(ssl_options, :server_name_indication, to_charlist(server_name))
     end
   end
+
   def amqp_adapter!() do
     Application.get_env(:astarte_events, :amqp_adapter) || ExRabbitPool.RabbitMQ
   end
