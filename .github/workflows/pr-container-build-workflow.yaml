@@ -16,7 +16,6 @@ jobs:
       matrix:
         app:
         - astarte_appengine_api
-        - astarte_data_updater_plant
         - astarte_housekeeping
         - astarte_pairing
         - astarte_realm_management
@@ -27,4 +26,20 @@ jobs:
       env:
         CONTAINER_IMAGE_NAME: gh_actions_test
       working-directory: ./apps/${{ matrix.app }}
-      run: docker build -t $CONTAINER_IMAGE_NAME:ci-test .
+      run: docker build -t $CONTAINER_IMAGE_NAME:ci-test .  
+
+  test-build-container-with-deps:
+    name: Test Container Build
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+        - astarte_data_updater_plant
+    steps:
+    - uses: actions/checkout@v4
+    - name: Building Docker Image
+      env:
+        CONTAINER_IMAGE_NAME: gh_actions_test
+      working-directory: .
+      run: docker build -t $CONTAINER_IMAGE_NAME:ci-test -f ./apps/${{ matrix.app }}/Dockerfile .
