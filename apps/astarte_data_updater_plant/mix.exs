@@ -75,7 +75,7 @@ defmodule Astarte.DataUpdaterPlant.Mixfile do
        path: "../astarte_realm_management", only: [:dev, :test], runtime: false},
       {:astarte_housekeeping,
        path: "../astarte_housekeeping", only: [:dev, :test], env: :dev, runtime: false},
-      {:astarte_events, path: "../../libs/astarte_events"}
+      {:astarte_events, path: astarte_lib("astarte_events")}
     ]
   end
 
@@ -110,5 +110,10 @@ defmodule Astarte.DataUpdaterPlant.Mixfile do
       {:uuid, "~> 2.0", hex: :uuid_erl},
       {:typedstruct, "~> 0.5"}
     ]
+  end
+
+  defp astarte_lib(library_name) do
+    base_directory = System.get_env("ASTARTE_LIBRARIES_PATH", "../libs")
+    Path.join(base_directory, library_name)
   end
 end

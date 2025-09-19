@@ -9,7 +9,7 @@ RUN apt-get update --allow-releaseinfo-change -y && apt-get install -y build-ess
 WORKDIR /app
 
 COPY apps/astarte_data_updater_plant/ ./
-COPY libs/ ../libs/
+COPY libs/ ./libraries
 
 # Install hex
 RUN mix local.hex --force && \
@@ -20,6 +20,7 @@ RUN mix local.hex --force && \
 ARG BUILD_ENV=prod
 
 ENV MIX_ENV=$BUILD_ENV
+ENV ASTARTE_LIBRARIES_PATH=libraries
 
 # Cache elixir deps
 ADD apps/astarte_data_updater_plant/mix.exs ./
