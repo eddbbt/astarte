@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-defmodule Astarte.Events.AMQPTriggers.Config do
+defmodule Astarte.Events.Config do
   use Skogsra
   alias Astarte.DataAccess.Config, as: DataAccessConfig
 

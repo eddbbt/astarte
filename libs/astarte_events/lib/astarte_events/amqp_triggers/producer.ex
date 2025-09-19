@@ -21,7 +21,7 @@ defmodule Astarte.Events.AMQPTriggers.Producer do
   require Logger
 
   alias AMQP.{Channel, Connection}
-  alias Astarte.Events.AMQPTriggers.Config
+  alias Astarte.Events.Config
 
   @adapter Config.amqp_adapter!()
 
