@@ -140,7 +140,7 @@ defmodule AstarteE2E.AmqpDeviceTrigger do
           device_id: state.device_id
         )
 
-        {:reply, {:error, :unexpected_trigger}, state}
+        {:reply, {:error, :unexpected_trigger}, %{}}
     end
   end
 
