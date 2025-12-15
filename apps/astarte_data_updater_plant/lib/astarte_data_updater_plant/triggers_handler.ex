@@ -126,6 +126,8 @@ defmodule Astarte.DataUpdaterPlant.TriggersHandler do
 
     event = %IncomingDataEvent{interface: interface_name, path: path, bson_value: bson_value}
 
+    dbg(device_id)
+
     Triggers.find_all_data_trigger_targets(
       realm,
       device_id,
