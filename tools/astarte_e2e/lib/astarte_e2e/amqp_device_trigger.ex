@@ -135,6 +135,7 @@ defmodule AstarteE2E.AmqpDeviceTrigger do
         {:reply, :ok, state, {:continue, :stop}}
 
       other ->
+        Logger.info(state)
         Logger.info("AMQP Device Trigger: unexpected event #{inspect(other)}",
           device_id: state.device_id
         )
