@@ -126,7 +126,21 @@ defmodule Astarte.DataUpdaterPlant.TriggersHandler do
 
     event = %IncomingDataEvent{interface: interface_name, path: path, bson_value: bson_value}
 
-    dbg(device_id)
+    Logger.info(device_id)
+
+    Logger.info(
+      Triggers.find_all_data_trigger_targets(
+        realm,
+        device_id,
+        groups,
+        :on_incoming_data,
+        interface_id,
+        endpoint_id,
+        path,
+        value,
+        Map.from_struct(state)
+      )
+    )
 
     Triggers.find_all_data_trigger_targets(
       realm,
