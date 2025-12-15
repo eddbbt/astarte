@@ -220,41 +220,55 @@ defmodule Astarte.AppEngine.API.Device.Queries do
         %InterfaceDescriptor{storage_type: :multi_interface_individual_properties_dbtable} =
           interface_descriptor,
         endpoint_id,
-        endpoint,
+        %Endpoint{allow_unset: true},
         path,
         nil,
         _timestamp,
         _opts
       ) do
-    if endpoint.allow_unset == false do
-      _ =
-        Logger.warning("Tried to unset value on allow_unset=false mapping.",
-          tag: "unset_not_allowed"
-        )
-
-      # TODO: should we handle this situation?
-    end
-
     # TODO: :reception_timestamp_submillis is just a place holder right now
     %InterfaceDescriptor{interface_id: interface_id, storage: storage} = interface_descriptor
     keyspace_name = Realm.keyspace_name(realm_name)
 
-    q =
+    delete_match =
       from v in storage,
         prefix: ^keyspace_name,
         where:
           v.device_id == ^device_id and v.interface_id == ^interface_id and
             v.endpoint_id == ^endpoint_id and v.path == ^path
 
-    with {0, _} <- Repo.delete_all(q, consistency: Consistency.device_info(:write)) do
-      Logger.warning(
-        "Could not unset value for  #{Device.encode_device_id(device_id)} in #{storage}}",
-        realm: "realm",
-        tag: "cant_unset"
-      )
+    {c, _} = Repo.delete_all(delete_match, consistency: Consistency.device_info(:write))
+
+    if c == 0 do
+      _ =
+        Logger.warning(
+          "Could not unset value for #{Device.encode_device_id(device_id)} in #{storage} or there was no data",
+          realm: "realm",
+          tag: "cant_unset"
+        )
     end
 
     :ok
+  end
+
+  def insert_value_into_db(
+        _realm_name,
+        _device_id,
+        %InterfaceDescriptor{storage_type: :multi_interface_individual_properties_dbtable} =
+          _interface_descriptor,
+        _endpoint_id,
+        _endpoint,
+        _path,
+        nil,
+        _timestamp,
+        _opts
+      ) do
+    _ =
+      Logger.warning("Tried to unset value on allow_unset=false mapping.",
+        tag: "unset_not_allowed"
+      )
+
+    {:error, :unset_not_allowed}
   end
 
   # TODO Copy&pasted from data updater plant, make it a library
@@ -696,168 +710,6 @@ defmodule Astarte.AppEngine.API.Device.Queries do
     delete_queries ++ insert_queries
   end
 
-  def insert_attribute(realm_name, device_id, attribute_key, attribute_value) do
-    keyspace = Realm.keyspace_name(realm_name)
-    new_attribute = %{attribute_key => attribute_value}
-
-    query =
-      from d in DatabaseDevice,
-        prefix: ^keyspace,
-        where: d.device_id == ^device_id,
-        update: [set: [attributes: fragment("attributes + ?", ^new_attribute)]]
-
-    consistency = Consistency.device_info(:write)
-
-    Repo.update_all(query, [], consistency: consistency)
-
-    :ok
-  end
-
-  def delete_attribute(realm_name, device_id, attribute_key) do
-    keyspace = Realm.keyspace_name(realm_name)
-
-    query =
-      from d in DatabaseDevice,
-        select: d.attributes
-
-    opts = [prefix: keyspace, consistency: :quorum]
-
-    with {:ok, attributes} <- Repo.fetch(query, device_id, opts),
-         {:ok, _} <- get_value(attributes, attribute_key, :attribute_key_not_found) do
-      map_new_attribute = MapSet.new([attribute_key])
-
-      query_delete_attributes =
-        from DatabaseDevice,
-          prefix: ^keyspace,
-          where: [device_id: ^device_id],
-          update: [set: [attributes: fragment("attributes - ?", ^map_new_attribute)]]
-
-      consistency = Consistency.device_info(:write)
-
-      with {0, _} <- Repo.update_all(query_delete_attributes, [], consistency: consistency) do
-        Logger.warning(
-          "Could not unset attribute #{attribute_key} for  #{Device.encode_device_id(device_id)} }",
-          realm: "#{realm_name}",
-          tag: "cant_unset_attribute"
-        )
-      end
-
-      :ok
-    end
-  end
-
-  def insert_alias(realm_name, device_id, alias_tag, alias_value) do
-    keyspace = Realm.keyspace_name(realm_name)
-
-    name = %Name{
-      object_name: alias_value,
-      object_type: 1,
-      object_uuid: device_id
-    }
-
-    insert_alias_to_names_query = Repo.insert_to_sql(name, prefix: keyspace)
-
-    new_alias = %{alias_tag => alias_value}
-
-    insert_alias_to_device =
-      from DatabaseDevice,
-        prefix: ^keyspace,
-        where: [device_id: ^device_id],
-        update: [set: [aliases: fragment("aliases + ?", ^new_alias)]]
-
-    insert_alias_to_device_query = Repo.to_sql(:update_all, insert_alias_to_device)
-
-    insert_batch =
-      %Exandra.Batch{queries: [insert_alias_to_names_query, insert_alias_to_device_query]}
-
-    consistency = Consistency.device_info(:write)
-
-    with {:existing, {:error, :device_not_found}} <-
-           {:existing, device_alias_to_device_id(realm_name, alias_value)},
-         :ok <- try_delete_alias(realm_name, device_id, alias_tag),
-         :ok <- Exandra.execute_batch(Repo, insert_batch, consistency: consistency) do
-      :ok
-    else
-      {:existing, {:ok, _device_uuid}} ->
-        {:error, :alias_already_in_use}
-
-      {:existing, {:error, reason}} ->
-        {:error, reason}
-
-      {:error, :device_not_found} ->
-        {:error, :device_not_found}
-    end
-  end
-
-  def delete_alias(realm_name, device_id, alias_tag) do
-    keyspace = Realm.keyspace_name(realm_name)
-
-    query =
-      from d in DatabaseDevice,
-        select: d.aliases
-
-    fetch_opts = [
-      prefix: keyspace,
-      consistency: Consistency.device_info(:read),
-      error: :device_not_found
-    ]
-
-    with {:ok, result} <- Repo.fetch(query, device_id, fetch_opts),
-         {:ok, alias_value} <- get_value(result, alias_tag, :alias_tag_not_found),
-         :ok <- check_alias_ownership(keyspace, device_id, alias_tag, alias_value) do
-      map_new_alias = MapSet.new([alias_tag])
-
-      query_delete_alias =
-        from DatabaseDevice,
-          prefix: ^keyspace,
-          where: [device_id: ^device_id],
-          update: [set: [aliases: fragment("aliases - ?", ^map_new_alias)]]
-
-      sql_query_delete_alias = Repo.to_sql(:update_all, query_delete_alias)
-
-      query_delete_in_name =
-        from d in Name,
-          prefix: ^keyspace,
-          where: [object_name: ^alias_value, object_type: 1]
-
-      sql_query_delete_in_name = Repo.to_sql(:delete_all, query_delete_in_name)
-
-      update_and_delete_batch =
-        %Exandra.Batch{queries: [sql_query_delete_alias, sql_query_delete_in_name]}
-
-      Exandra.execute_batch(Repo, update_and_delete_batch,
-        consistency: Consistency.device_info(:write)
-      )
-    end
-  end
-
-  defp try_delete_alias(realm_name, device_id, alias_tag) do
-    case delete_alias(realm_name, device_id, alias_tag) do
-      :ok ->
-        :ok
-
-      {:error, :alias_tag_not_found} ->
-        :ok
-
-      not_ok ->
-        not_ok
-    end
-  end
-
-  def set_inhibit_credentials_request(realm_name, device_id, inhibit_credentials_request) do
-    keyspace = Realm.keyspace_name(realm_name)
-
-    query =
-      from DatabaseDevice,
-        prefix: ^keyspace,
-        update: [set: [inhibit_credentials_request: ^inhibit_credentials_request]],
-        where: [device_id: ^device_id]
-
-    Repo.update_all(query, [], consistency: Consistency.device_info(:write))
-
-    :ok
-  end
-
   def retrieve_object_datastream_values(
         _realm_name,
         _device_id,
@@ -1180,29 +1032,5 @@ defmodule Astarte.AppEngine.API.Device.Queries do
       previous_interfaces: previous_interfaces,
       groups: groups
     }
-  end
-
-  defp get_value(nil = _collection, _key, error), do: {:error, error}
-
-  defp get_value(collection, key, error) do
-    case Map.fetch(collection, key) do
-      {:ok, value} -> {:ok, value}
-      :error -> {:error, error}
-    end
-  end
-
-  defp check_alias_ownership(keyspace, expected_device_id, alias_tag, alias_value) do
-    case do_device_alias_to_device_id(keyspace, alias_value) do
-      {:ok, ^expected_device_id} ->
-        :ok
-
-      _ ->
-        Logger.error("Inconsistent alias for #{alias_tag}.",
-          device_id: expected_device_id,
-          tag: "inconsistent_alias"
-        )
-
-        {:error, :database_error}
-    end
   end
 end

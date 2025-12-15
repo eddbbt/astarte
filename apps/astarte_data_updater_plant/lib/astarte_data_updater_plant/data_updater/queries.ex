@@ -30,7 +30,7 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
   alias Astarte.DataAccess.Realms.IndividualProperty
   alias Astarte.DataAccess.KvStore
   alias Astarte.DataAccess.Realms.Realm
-  alias Astarte.DataUpdaterPlant.Repo
+  alias Astarte.DataAccess.Repo
   import Ecto.Query
   require Logger
 
@@ -94,18 +94,13 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
         device_id,
         %InterfaceDescriptor{storage_type: :multi_interface_individual_properties_dbtable} =
           interface_descriptor,
-        mapping,
+        %Mapping{allow_unset: true} = mapping,
         path,
         nil,
         _value_timestamp,
         _reception_timestamp,
         opts
       ) do
-    if mapping.allow_unset == false do
-      Logger.warning("Tried to unset value on allow_unset=false mapping.")
-      # TODO: should we handle this situation?
-    end
-
     %InterfaceDescriptor{storage: storage, interface_id: interface_id} = interface_descriptor
     %Mapping{endpoint_id: endpoint_id} = mapping
     keyspace = Realm.keyspace_name(realm)
@@ -114,6 +109,27 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
       remove_property_row(keyspace, storage, device_id, interface_id, endpoint_id, path, opts)
 
     :ok
+  end
+
+  def insert_value_into_db(
+        realm,
+        device_id,
+        %InterfaceDescriptor{storage_type: :multi_interface_individual_properties_dbtable} =
+          _interface_descriptor,
+        _mapping,
+        _path,
+        nil,
+        _value_timestamp,
+        _reception_timestamp,
+        _opts
+      ) do
+    _ =
+      Logger.warning(
+        "Device #{inspect(device_id)} in realm #{realm} tried to unset an unsettable property.",
+        tag: :unset_not_allowed
+      )
+
+    {:error, :unset_not_allowed}
   end
 
   def insert_value_into_db(
@@ -494,11 +510,11 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
       |> select([device], fragment("TTL(?)", device.connected))
       |> put_query_prefix(keyspace_name)
 
-    case Repo.fetch_one(query, consistency: Consistency.device_info(:read)) do
-      n when is_number(n) ->
+    case Repo.safe_fetch_one(query, consistency: Consistency.device_info(:read)) do
+      {:ok, n} ->
         {:ok, n}
 
-      nil ->
+      {:error, :not_found} ->
         {:error, :device_not_found}
 
       {:error, reason} ->
@@ -536,9 +552,16 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
         exchanged_msgs_by_interface: interface_exchanged_msgs
       )
 
-    opts = [prefix: keyspace_name, consistency: Consistency.device_info(:write)]
+    opts = [
+      prefix: keyspace_name,
+      consistency: Consistency.device_info(:write),
+      allow_insert: false,
+      allow_stale: true
+    ]
 
     Repo.update!(changeset, opts)
+
+    :ok
   end
 
   def fetch_device_introspection_minors(realm, device_id) do
@@ -552,7 +575,7 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
 
     consistency = Consistency.device_info(:read)
 
-    with minors when is_map(minors) <- Repo.fetch_one(query, consistency: consistency) do
+    with {:ok, minors} <- Repo.safe_fetch_one(query, consistency: consistency) do
       {:ok, minors}
     end
   end
@@ -568,7 +591,7 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
 
     consistency = Consistency.device_info(:read)
 
-    with groups when is_map(groups) <- Repo.fetch_one(query, consistency: consistency) do
+    with {:ok, groups} <- Repo.safe_fetch_one(query, consistency: consistency) do
       {:ok, Map.keys(groups)}
     end
   end
@@ -705,9 +728,9 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
       |> where(device_id: ^device_id)
       |> put_query_prefix(keyspace_name)
 
-    case Repo.fetch_one(query, consistency: Consistency.device_info(:read)) do
-      device_id when is_binary(device_id) -> {:ok, true}
-      nil -> {:ok, false}
+    case Repo.safe_fetch_one(query, consistency: Consistency.device_info(:read)) do
+      {:ok, _} -> {:ok, true}
+      {:error, :not_found} -> {:ok, false}
       {:error, reason} -> {:error, reason}
     end
   end
@@ -749,7 +772,7 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
     |> Repo.all(consistency: Consistency.device_info(:read))
   end
 
-  def fetch_datastream_maximum_storage_retention(realm) do
+  def get_datastream_maximum_storage_retention(realm) do
     keyspace_name = Realm.keyspace_name(realm)
 
     query =
@@ -760,8 +783,10 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
 
     consistency = Consistency.domain_model(:read)
 
-    with n when is_number(n) or is_nil(n) <- Repo.fetch_one(query, consistency: consistency) do
-      {:ok, n}
+    case Repo.safe_fetch_one(query, consistency: consistency) do
+      {:ok, n} -> {:ok, n}
+      {:error, :not_found} -> {:ok, nil}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -786,13 +811,13 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
     consistency = Consistency.device_info(:read)
 
     case Repo.fetch_all(q, consistency: consistency) do
-      [] ->
+      {:ok, []} ->
         {:error, :property_not_set}
 
-      [nil] ->
+      {:ok, [nil]} ->
         {:ok, :no_expiry}
 
-      [ttl] when is_integer(ttl) ->
+      {:ok, [ttl]} when is_integer(ttl) ->
         expiry_datetime =
           DateTime.utc_now()
           |> DateTime.to_unix()
@@ -836,24 +861,28 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
   def ack_start_device_deletion(realm_name, device_id) do
     keyspace_name = Realm.keyspace_name(realm_name)
 
-    query =
-      from(d in DeletionInProgress,
-        prefix: ^keyspace_name,
-        where: d.device_id == ^device_id,
-        update: [set: [dup_start_ack: true]]
-      )
+    deletion_in_progress =
+      %DeletionInProgress{device_id: device_id}
+      |> Ecto.Changeset.change(%{dup_start_ack: true})
 
-    consistency = Consistency.device_info(:write)
+    opts = [
+      prefix: keyspace_name,
+      consistency: Consistency.device_info(:write),
+      allow_insert: false,
+      allow_stale: true
+    ]
 
-    with {:ok, _} <- Repo.safe_update_all(query, [], consistency: consistency) do
+    with {:ok, _} <- Repo.safe_update(deletion_in_progress, opts) do
       :ok
     end
   end
 
   def check_device_deletion_in_progress(realm_name, device_id) do
+    keyspace_name = Realm.keyspace_name(realm_name)
+
     Xandra.Cluster.run(
       :xandra,
-      &do_check_device_deletion_in_progress(&1, realm_name, device_id)
+      &do_check_device_deletion_in_progress(&1, keyspace_name, device_id)
     )
   end
 
@@ -909,9 +938,11 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater.Queries do
   end
 
   def retrieve_devices_waiting_to_start_deletion!(realm_name) do
+    keyspace_name = Realm.keyspace_name(realm_name)
+
     Xandra.Cluster.run(
       :xandra,
-      &do_retrieve_devices_waiting_to_start_deletion!(&1, realm_name)
+      &do_retrieve_devices_waiting_to_start_deletion!(&1, keyspace_name)
     )
   end
 

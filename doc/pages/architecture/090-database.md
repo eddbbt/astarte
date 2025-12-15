@@ -12,6 +12,19 @@ Astarte is multi-tenant by design, with each tenant mapping to an Astarte Realm.
 
 Astarte automatically takes care of keyspaces, tables creation and intra-version migrations (those tasks are performed by `astarte_housekeeping` or `astarte_realm_management`, depending on the context). The following documentation is just a reference about Astarte's internal statements, and is related to the release series referenced by the documentation.
 
+
+### Astarte Instance ID
+The Astarte Instance ID is needed in order to run multiple Astarte instances on a shared database, 
+as it provides proper namespace isolation. It is configurable by setting the `ASTARTE_INSTANCE_ID` environment variable, and when set to an empty string (the default), maintains the same behavior 
+as previous installations. 
+The Astarte Instance ID is fully supported by the Astarte Operator.For the usage with the operator you can 
+refer to [the corresponding documentation](https://docs.astarte-platform.org/astarte-kubernetes-operator/24.5/001-intro_administrator.html) 
+
+#### Inner workings
+When the Astarte Instance ID is set, it is used as a prefix for the Cassandra keyspace name. 
+If the resulting keyspace name would exceed Cassandra’s length limits, suitable adjustments 
+are automatically applied to ensure compliance.
+
 ### Astarte Keyspace
 
 Astarte needs an `astarte` keyspace to store its own data.
@@ -27,6 +40,7 @@ CREATE KEYSPACE astarte
 ```sql
 CREATE TABLE astarte.realms (
   realm_name varchar,
+  device_registration_limit bigint,
 
   PRIMARY KEY (realm_name)
 );
@@ -34,8 +48,8 @@ CREATE TABLE astarte.realms (
 
 ```sql
 CREATE TABLE astarte.kv_store (
-    group text,
-    key text,
+    group varchar,
+    key varchar,
     value blob,
     PRIMARY KEY (group, key)
 )
@@ -107,7 +121,7 @@ CREATE TABLE <realm_name>.devices (
   last_seen_ip inet,
   attributes map<varchar, varchar>,
 
-  groups map<text, timeuuid>,
+  groups map<varchar, timeuuid>,
 
   PRIMARY KEY (device_id)
 );
@@ -139,8 +153,8 @@ CREATE TABLE <realm name>.endpoints (
   database_retention_policy int,
   allow_unset boolean,
   explicit_timestamp boolean,
-  description text,
-  doc text,
+  description varchar,
+  doc varchar,
 
   PRIMARY KEY ((interface_id), endpoint_id)
 );
@@ -159,8 +173,8 @@ CREATE TABLE <realm name>.interfaces (
   aggregation int,
   automaton_transitions blob,
   automaton_accepting_states blob,
-  description text,
-  doc text,
+  description varchar,
+  doc varchar,
 
   PRIMARY KEY (name, major_version)
 );
@@ -185,7 +199,7 @@ CREATE TABLE <realm name>.individual_datastreams (
     device_id uuid,
     interface_id uuid,
     endpoint_id uuid,
-    path text,
+    path varchar,
     value_timestamp timestamp,
     reception_timestamp timestamp,
     reception_timestamp_submillis smallint,
@@ -201,8 +215,8 @@ CREATE TABLE <realm name>.individual_datastreams (
     integerarray_value list<int>,
     longinteger_value bigint,
     longintegerarray_value list<bigint>,
-    string_value text,
-    stringarray_value list<text>,
+    string_value varchar,
+    stringarray_value list<varchar>,
     PRIMARY KEY ((device_id, interface_id, endpoint_id, path), value_timestamp, reception_timestamp, reception_timestamp_submillis)
 ) 
 ```
@@ -212,28 +226,38 @@ CREATE TABLE <realm name>.individual_properties (
   device_id uuid,
   interface_id uuid,
   endpoint_id uuid,
-  path text,
+  path varchar,
   reception_timestamp timestamp,
   reception_timestamp_submillis smallint,
   double_value double,
   integer_value int,
   boolean_value boolean,
   longinteger_value bigint,
-  string_value text,
+  string_value varchar,
   binaryblob_value blob,
   datetime_value timestamp,
   doublearray_value list<double>,
   integerarray_value list<int>,
   booleanarray_value list<boolean>,
   longintegerarray_value list<bigint>,
-  stringarray_value list<text>,
+  stringarray_value list<varchar>,
   binaryblobarray_value list<blob>,
   datetimearray_value list<timestamp>,
 
   PRIMARY KEY((device_id, interface_id), endpoint_id, path)
 );
-
 ```
+
+```sql
+CREATE TABLE <realm name>.deletion_in_progress (
+  device_id uuid,
+  vmq_ack boolean,
+  dup_start_ack boolean,
+  dup_end_ack boolean,
+  PRIMARY KEY (device_id)
+);
+```
+
 The following table is generated upon datastream interface creation for keeping all data sent to Astarte through the interface.
 
 The table name is derived from lower case interface name where `.` and `-` have been replaced by `_` and `""` (empty string), then the major version is appended with a `_v` prefix. 
@@ -244,7 +268,7 @@ If, after all the required transformations, the resulting name is too long (>45 
 ```sql
 CREATE TABLE <interpolated interface name>_v<major_version> (
     device_id uuid,
-    path text,
+    path varchar,
     reception_timestamp timestamp,
     reception_timestamp_submillis smallint,
     v_<property_mapping> <property_type>
@@ -286,7 +310,7 @@ The `devices` table stores the list of all the devices for a certain realm and a
 | `last_credentials_request_ip` | `inet`                                | Device IP address used during the last credential request.                                                                                                                                         |
 | `last_seen_ip`                | `inet`                                | Most recent device IP address.                                                                                                                                                                     |
 | `attributes`                  | `map<varchar, varchar>`               | Device attributes. It can contain arbitrary string key and values associated with the device.
-| `groups`                      | `map<text, timeuuid>`                 | Groups which the device belongs to, the key is the group name, and the value is its insertion timeuuid, which is used as part of the key on grouped_devices table.     
+| `groups`                      | `map<varchar, timeuuid>`              | Groups which the device belongs to, the key is the group name, and the value is its insertion timeuuid, which is used as part of the key on grouped_devices table.     
 
 ### Endpoints
 
@@ -309,8 +333,8 @@ The `endpoints` table stores the list of all endpoints of all interfaces for rea
 | `database_retention_policy`   | `int`                                 | Database_retention_policy identifier related to the endpoint.                                                                                                                                      |
 | `allow_unset`                 | `boolean`                             | Enable or disable possibility of setting value to null.                                                                                                                                            |
 | `explicit_timestamp`          | `boolean`                             | Set or unset explicit timestamp.                                                                                                                                                                   |
-| `description`                 | `text`                                | Description of endpoint.                                                                                                                                                                           |          
-| `doc`                         | `text`                                | Documentation for endpoint.                                                                                                                                                                       | 
+| `description`                 | `varchar`                             | Description of endpoint.                                                                                                                                                                           |          
+| `doc`                         | `varchar`                             | Documentation for endpoint.                                                                                                                                                                       | 
 
 
 
@@ -331,8 +355,8 @@ The `interfaces` table stores the list of all interfaces for realm, with all the
 | `aggregation`                 | `int`                                 | Identifies the aggregation of the mappings of the interface.                                                                                                                                       |
 | `automaton_transitions`       | `blob`                                | Automaton internal field.                                                                                                                                                                          |
 | `automaton_accepting_states`  | `blob`                                | Automaton internal field.                                                                                                                                                                          |
-| `description`                 | `text`                                | Description of interface.                                                                                                                                                                          |
-| `doc`                         | `text`                                | Documentation of interface.                                                                                                                                                                        |
+| `description`                 | `varchar`                             | Description of interface.                                                                                                                                                                          |
+| `doc`                         | `varchar`                             | Documentation of interface.                                                                                                                                                                        |
 
 
 ## Schema changes
@@ -379,7 +403,7 @@ CREATE TABLE <realm_name>.grouped_devices (
 
 ```sql
 ALTER TABLE <realm_name>.devices
-ADD (groups map<text, timeuuid>,
+ADD (groups map<varchar, timeuuid>,
     exchanged_bytes_by_interface map<frozen<tuple<ascii, int>>, bigint>,
     exchanged_msgs_by_interface map<frozen<tuple<ascii, int>>, bigint>);
 ```

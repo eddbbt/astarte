@@ -17,22 +17,11 @@
 #
 
 defmodule Astarte.AppEngine.APIWeb.DataTransmitterTest do
-  use Astarte.AppEngine.APIWeb.ChannelCase
-
-  alias Astarte.RPC.Protocol.VMQ.Plugin, as: Protocol
-
-  alias Astarte.RPC.Protocol.VMQ.Plugin.{
-    Call,
-    GenericOkReply,
-    Publish,
-    Reply
-  }
+  use Astarte.Cases.Conn
 
   alias Astarte.AppEngine.API.DataTransmitter
 
   import Mox
-
-  @vmq_plugin_destination Protocol.amqp_queue()
 
   @realm "myrealm"
   @device_id <<35, 1, 71, 23, 239, 218, 73, 15, 166, 214, 106, 110, 62, 242, 13, 123>>

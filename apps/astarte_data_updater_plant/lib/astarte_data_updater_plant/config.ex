@@ -24,6 +24,8 @@ defmodule Astarte.DataUpdaterPlant.Config do
   alias Astarte.DataAccess.Config, as: DataAccessConfig
   use Skogsra
 
+  @paths_cache_size 32
+
   @type ssl_option ::
           {:cacertfile, String.t()}
           | {:verify, :verify_peer}
@@ -204,15 +206,6 @@ defmodule Astarte.DataUpdaterPlant.Config do
     type: :integer,
     default: 4000
 
-  @envdoc """
-  The RPC client, defaulting to AMQP.Client. Used for Mox during testing.
-  """
-  app_env :rpc_client, :astarte_data_updater_plant, :rpc_client,
-    os_env: "DATA_UPDATER_PLANT_RPC_CLIENT",
-    binding_skip: [:system],
-    type: :module,
-    default: Astarte.RPC.AMQP.Client
-
   @envdoc "The interval between two heartbeats sent from the VernqMQ device process."
   app_env :device_heartbeat_interval_ms,
           :astarte_data_updater_plant,
@@ -253,13 +246,21 @@ defmodule Astarte.DataUpdaterPlant.Config do
           type: :binary,
           default: "app=astarte-data-updater-plant"
 
-  @envdoc "The Endpoint label to use to query Kubernetes to find vernemq instances. Defaults to `app=astarte-vernemq`."
+  @envdoc "The Pod label to use to query Kubernetes to find vernemq instances. Defaults to `app=astarte-vernemq`."
   app_env :vernemq_clustering_kubernetes_selector,
           :astarte_data_updater_plant,
           :vernemq_clustering_kubernetes_selector,
           os_env: "VERNEMQ_CLUSTERING_KUBERNETES_SELECTOR",
           type: :binary,
           default: "app=astarte-vernemq"
+
+  @envdoc "The name of the Kubernetes service to use to query Kubernetes to find vernemq instances. Defaults to `astarte-vernemq`."
+  app_env :vernemq_clustering_kubernetes_service_name,
+          :astarte_data_updater_plant,
+          :vernemq_clustering_kubernetes_service_name,
+          os_env: "VERNEMQ_CLUSTERING_KUBERNETES_SERVICE_NAME",
+          type: :binary,
+          default: "astarte-vernemq"
 
   @envdoc "The Kubernetes namespace to use when `kubernetes` Erlang clustering strategy is used. Defaults to `astarte`."
   app_env :clustering_kubernetes_namespace,
@@ -482,7 +483,7 @@ defmodule Astarte.DataUpdaterPlant.Config do
             strategy: Elixir.Cluster.Strategy.Kubernetes,
             config: [
               mode: :hostname,
-              kubernetes_service_name: "astarte-vernemq",
+              kubernetes_service_name: vernemq_clustering_kubernetes_service_name!(),
               kubernetes_node_basename: "VerneMQ",
               kubernetes_ip_lookup_mode: :pods,
               kubernetes_selector: vernemq_clustering_kubernetes_selector!(),
@@ -513,6 +514,8 @@ defmodule Astarte.DataUpdaterPlant.Config do
         ]
     end
   end
+
+  def paths_cache_size!, do: @paths_cache_size
 
   @doc """
   Returns Cassandra nodes formatted in the Xandra format.

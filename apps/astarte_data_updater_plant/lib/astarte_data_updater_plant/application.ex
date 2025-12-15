@@ -41,7 +41,7 @@ defmodule Astarte.DataUpdaterPlant.Application do
     Config.validate!()
     DataAccessConfig.validate!()
 
-    xandra_options = repo_opts = Config.xandra_options!()
+    xandra_options = Config.xandra_options!()
 
     data_access_opts = [xandra_options: xandra_options]
 
@@ -53,7 +53,6 @@ defmodule Astarte.DataUpdaterPlant.Application do
       Astarte.DataUpdaterPlantWeb.Telemetry,
       {Xandra.Cluster, dup_xandra_opts},
       {Astarte.DataAccess, data_access_opts},
-      {Astarte.DataUpdaterPlant.Repo, repo_opts},
       Astarte.DataUpdaterPlant.DataPipelineSupervisor
     ]
 

@@ -16,6 +16,10 @@
 # limitations under the License.
 #
 
+Mimic.copy(AMQP.Basic)
 Mimic.copy(Astarte.DataAccess.Config)
+Mimic.copy(ExRabbitPool)
+Mimic.copy(ExRabbitPool.RabbitMQ)
+Mimic.copy(HTTPoison)
 
-ExUnit.start()
+ExUnit.start(capture_log: true)

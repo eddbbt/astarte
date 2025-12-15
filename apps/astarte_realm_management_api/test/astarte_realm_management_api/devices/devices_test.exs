@@ -1,7 +1,7 @@
 #
 # This file is part of Astarte.
 #
-# Copyright 2023 SECO Mind Srl
+# Copyright 2023 - 2025 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,23 +17,26 @@
 #
 
 defmodule Astarte.RealmManagement.API.DevicesTest do
-  use Astarte.RealmManagement.API.DataCase
+  use Astarte.RealmManagement.API.DataCase, async: true
+  use ExUnitProperties
 
   alias Astarte.RealmManagement.API.Devices
-  alias Astarte.RealmManagement.Mock.DB
+  alias Astarte.RealmManagement.API.Helpers.RPCMock.DB
+  alias Astarte.Core.Generators.Device, as: DeviceGenerator
 
-  @realm "testrealm"
+  describe "property based device tests" do
+    @describetag :devices
+    property "delete device succeeds when the device exists", %{realm: realm} do
+      check all(device_id <- DeviceGenerator.encoded_id()) do
+        DB.create_device(realm, device_id)
+        assert :ok = Devices.delete_device(realm, device_id)
+      end
+    end
 
-  test "delete device succeeds when the device exists" do
-    device_id = :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
-    DB.create_device(@realm, device_id)
-
-    assert :ok = Devices.delete_device(@realm, device_id)
-  end
-
-  test "delete device fails when the device does not exists" do
-    missing_device_id = :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
-
-    assert {:error, :device_not_found} = Devices.delete_device(@realm, missing_device_id)
+    property "delete device fails on a non-existing device", %{realm: realm} do
+      check all(device_id <- DeviceGenerator.encoded_id()) do
+        assert {:error, :device_not_found} = Devices.delete_device(realm, device_id)
+      end
+    end
   end
 end

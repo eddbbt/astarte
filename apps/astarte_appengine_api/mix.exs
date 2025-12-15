@@ -22,7 +22,7 @@ defmodule Astarte.AppEngine.API.Mixfile do
     [
       app: :astarte_appengine_api,
       elixir: "~> 1.15",
-      version: "1.2.1-alpha.0",
+      version: "1.2.1-rc.0",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       test_coverage: [tool: ExCoveralls],
@@ -62,8 +62,7 @@ defmodule Astarte.AppEngine.API.Mixfile do
   defp astarte_required_modules("true") do
     [
       {:astarte_core, in_umbrella: true},
-      {:astarte_data_access, in_umbrella: true},
-      {:astarte_rpc, in_umbrella: true}
+      {:astarte_data_access, in_umbrella: true}
     ]
   end
 
@@ -72,7 +71,9 @@ defmodule Astarte.AppEngine.API.Mixfile do
       {:astarte_core, github: "astarte-platform/astarte_core", branch: "release-1.2"},
       {:astarte_data_access,
        github: "astarte-platform/astarte_data_access", branch: "release-1.2"},
-      {:astarte_rpc, "~> 1.2"}
+      {:astarte_generators, github: "astarte-platform/astarte_generators", only: [:dev, :test]},
+      {:astarte_realm_management,
+       path: "../astarte_realm_management", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -81,6 +82,7 @@ defmodule Astarte.AppEngine.API.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:amqp, "~> 3.0"},
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.0"},
       {:phoenix_view, "~> 2.0"},
@@ -116,7 +118,7 @@ defmodule Astarte.AppEngine.API.Mixfile do
       # Test section
       {:excoveralls, "~> 0.15", only: :test},
       {:mox, "~> 0.5", only: :test},
-      {:stream_data, "~> 0.5", only: [:test, :dev]}
+      {:mimic, "~> 1.11", only: :test}
     ]
   end
 end

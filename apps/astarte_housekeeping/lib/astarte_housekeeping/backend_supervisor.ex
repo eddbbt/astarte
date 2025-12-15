@@ -32,15 +32,14 @@ defmodule Astarte.Housekeeping.BackendSupervisor do
   def init(_init_arg) do
     Logger.info("BackendSupervisor init", tag: "housekeeping_backend_sup_init")
 
-    xandra_options = repo_opts = Config.xandra_options!()
+    xandra_options = Config.xandra_options!()
     data_access_opts = [xandra_options: xandra_options]
     hk_xandra_opts = Keyword.put(xandra_options, :name, :xandra)
 
     children = [
       {Astarte.RPC.AMQP.Server, [amqp_queue: Protocol.amqp_queue(), handler: Handler]},
       {Xandra.Cluster, hk_xandra_opts},
-      {Astarte.DataAccess, data_access_opts},
-      {Astarte.Housekeeping.Repo, repo_opts}
+      {Astarte.DataAccess, data_access_opts}
     ]
 
     opts = [strategy: :rest_for_one, name: __MODULE__]

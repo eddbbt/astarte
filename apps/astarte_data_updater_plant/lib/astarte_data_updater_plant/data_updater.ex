@@ -190,15 +190,20 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater do
     end
   end
 
-  def fetch_data_updater_process(realm, encoded_device_id, message_tracker) do
+  def fetch_data_updater_process(realm, encoded_device_id, message_tracker, wait_start \\ false) do
     with {:ok, device_id} <- Device.decode_device_id(encoded_device_id) do
       sharding_key = {realm, device_id}
+
+      args =
+        if wait_start,
+          do: {realm, device_id, message_tracker, :wait_start},
+          else: {realm, device_id, message_tracker}
 
       case Horde.Registry.lookup(Registry.DataUpdater, {realm, device_id}) do
         [] ->
           case Horde.DynamicSupervisor.start_child(
                  Supervisor.DataUpdater,
-                 {DataUpdater.Server, {realm, device_id, message_tracker}}
+                 {DataUpdater.Server, args}
                ) do
             {:ok, pid} ->
               {:ok, pid}
@@ -299,6 +304,22 @@ defmodule Astarte.DataUpdaterPlant.DataUpdater do
 
         {:error, :device_does_not_exist}
       end
+    end
+  end
+
+  @doc """
+  Runs a `funciton` that needs a `dup` and `message_tracker` reference.
+
+  Returns the function return value or `{:error, reason}` if one of these happen
+  - The device could not be found (`device_id` in `realm`)
+  - the `message_tracker` could not be found or started
+  - the `data_updater` could not be found or started
+  """
+  def with_dup_and_message_tracker(realm, device_id, function) do
+    with :ok <- verify_device_exists(realm, device_id),
+         {:ok, message_tracker} <- fetch_message_tracker(realm, device_id),
+         {:ok, dup} <- fetch_data_updater_process(realm, device_id, message_tracker) do
+      function.(dup, message_tracker)
     end
   end
 end

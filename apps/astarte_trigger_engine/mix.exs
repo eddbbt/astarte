@@ -23,7 +23,7 @@ defmodule Astarte.TriggerEngine.Mixfile do
     [
       app: :astarte_trigger_engine,
       elixir: "~> 1.15",
-      version: "1.2.1-alpha.0",
+      version: "1.2.1-rc.0",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -87,6 +87,7 @@ defmodule Astarte.TriggerEngine.Mixfile do
       {:telemetry_metrics, "~> 0.4"},
       {:telemetry_poller, "~> 0.4"},
       {:typed_ecto_schema, "~> 0.4"},
+      {:typedstruct, "~> 0.5"},
       {:ecto, "~> 3.12"},
       {:pretty_log, "~> 0.1"},
       {:telemetry, "~> 0.4"},

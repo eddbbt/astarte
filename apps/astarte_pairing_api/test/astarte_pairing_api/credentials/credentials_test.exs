@@ -1,7 +1,7 @@
 #
 # This file is part of Astarte.
 #
-# Copyright 2017-2018 Ispirata Srl
+# Copyright 2017 - 2025 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #
 
 defmodule Astarte.Pairing.API.CredentialsTest do
-  use Astarte.Pairing.API.DataCase
+  use Astarte.Pairing.API.DataCase, async: true
 
   alias Astarte.Pairing.API.Credentials
 
@@ -246,6 +246,22 @@ defmodule Astarte.Pairing.API.CredentialsTest do
                                        }
                                        |> Reply.encode()
 
+    @encoded_empty_details_response %Reply{
+                                      reply:
+                                        {:verify_credentials_reply,
+                                         %VerifyCredentialsReply{
+                                           credentials_status:
+                                             {:astarte_mqtt_v1,
+                                              %AstarteMQTTV1CredentialsStatus{
+                                                valid: false,
+                                                timestamp: @now,
+                                                cause: :INVALID_ISSUER,
+                                                details: ""
+                                              }}
+                                         }}
+                                    }
+                                    |> Reply.encode()
+
     test "valid call returns CredentialsStatus" do
       MockRPCClient
       |> expect(:rpc_call, fn serialized_call, @rpc_destination, @timeout ->
@@ -302,6 +318,23 @@ defmodule Astarte.Pairing.API.CredentialsTest do
                 cause: :INVALID_ISSUER,
                 until: nil,
                 details: nil
+              }} =
+               Credentials.verify_astarte_mqtt_v1(@realm, @hw_id, @secret, @self_signed_crt_attrs)
+    end
+
+    test "returns invalid CertificateStatus for empty-details branch" do
+      MockRPCClient
+      |> expect(:rpc_call, fn _serialized_call, @rpc_destination, @timeout ->
+        {:ok, @encoded_empty_details_response}
+      end)
+
+      assert {:ok,
+              %CredentialsStatus{
+                valid: false,
+                timestamp: @now,
+                cause: :INVALID_ISSUER,
+                details: nil,
+                until: nil
               }} =
                Credentials.verify_astarte_mqtt_v1(@realm, @hw_id, @secret, @self_signed_crt_attrs)
     end

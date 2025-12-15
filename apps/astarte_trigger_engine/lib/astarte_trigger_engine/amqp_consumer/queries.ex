@@ -20,7 +20,7 @@ defmodule Astarte.TriggerEngine.AMQPConsumer.Queries do
   alias Astarte.DataAccess.Consistency
   alias Astarte.DataAccess.KvStore
   alias Astarte.DataAccess.Realms.Realm
-  alias Astarte.TriggerEngine.Repo
+  alias Astarte.DataAccess.Repo
   require Logger
 
   import Ecto.Query
@@ -33,7 +33,7 @@ defmodule Astarte.TriggerEngine.AMQPConsumer.Queries do
         prefix: ^keyspace_name,
         where: k.group == "trigger_policy"
 
-    case Repo.safe_fetch_all(query, consistency: Consistency.domain_model(:read)) do
+    case Repo.fetch_all(query, consistency: Consistency.domain_model(:read)) do
       {:ok, policies} ->
         {:ok, Enum.map(policies, &extract_name_and_data/1)}
 
@@ -51,13 +51,9 @@ defmodule Astarte.TriggerEngine.AMQPConsumer.Queries do
         prefix: ^keyspace_name,
         select: r.realm_name
 
-    case Repo.safe_fetch_all(query, consistency: Consistency.domain_model(:read)) do
-      {:ok, realms} ->
-        {:ok, realms}
-
-      {:error, reason} ->
-        _ = Logger.warning("Could not list realms, reason: #{inspect(reason)}")
-        {:error, reason}
+    with {:error, reason} <- Repo.fetch_all(query, consistency: Consistency.domain_model(:read)) do
+      _ = Logger.warning("Could not list realms, reason: #{inspect(reason)}")
+      {:error, reason}
     end
   end
 

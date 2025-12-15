@@ -15,12 +15,10 @@ config :astarte_data_updater_plant, :amqp_events_exchange_name, "astarte_events"
 
 config :astarte_data_updater_plant, :amqp_consumer_prefetch_count, 300
 
-config :astarte_rpc, :amqp_queue, "data_updater_plant_rpc"
-
 config :astarte_data_updater_plant, :amqp_adapter, ExRabbitPool.RabbitMQ
 
-config :astarte_data_updater_plant, ecto_repos: [Astarte.DataUpdaterPlant.Repo]
+config :astarte_data_updater_plant, ecto_repos: [Astarte.DataAccess.Repo]
 
-config :astarte_data_updater_plant, Astarte.DataUpdaterPlant.Repo, []
+config :astarte_data_updater_plant, Astarte.DataAccess.Repo, []
 
 import_config "#{config_env()}.exs"

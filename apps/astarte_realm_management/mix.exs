@@ -23,7 +23,7 @@ defmodule Astarte.RealmManagement.Mixfile do
     [
       app: :astarte_realm_management,
       elixir: "~> 1.15",
-      version: "1.2.1-alpha.0",
+      version: "1.2.1-rc.0",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -89,6 +89,7 @@ defmodule Astarte.RealmManagement.Mixfile do
       {:exandra, "~> 0.13"},
       {:typed_ecto_schema, "~> 0.4"},
       {:observer_cli, "~> 1.5"},
+      {:mimic, "~> 1.11", only: :test},
       {:dialyxir, "~> 1.0", only: [:dev, :ci], runtime: false},
       # Workaround for Elixir 1.15 / ssl_verify_fun issue
       # See also: https://github.com/deadtrickster/ssl_verify_fun.erl/pull/27

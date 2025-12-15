@@ -1,7 +1,7 @@
 #
 # This file is part of Astarte.
 #
-# Copyright 2023 SECO Mind Srl
+# Copyright 2023 - 2025 SECO Mind Srl
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,17 +17,17 @@
 #
 
 defmodule Astarte.RealmManagement.APIWeb.DeviceControllerTest do
-  use Astarte.RealmManagement.APIWeb.ConnCase
+  use Astarte.RealmManagement.APIWeb.ConnCase, async: true
 
-  alias Astarte.RealmManagement.API.JWTTestHelper
-  alias Astarte.RealmManagement.Mock
+  alias Astarte.RealmManagement.API.Helpers.JWTTestHelper
+  alias Astarte.RealmManagement.API.Helpers.RPCMock.DB
 
-  @realm "testrealm"
   @device_id :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
   @other_device_id :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
 
-  setup %{conn: conn} do
-    Mock.DB.create_device(@realm, @device_id)
+  setup %{conn: conn, realm: realm} do
+    DB.create_device(realm, @device_id)
+    DB.put_jwt_public_key_pem(realm, JWTTestHelper.public_key_pem())
     token = JWTTestHelper.gen_jwt_all_access_token()
 
     conn =
@@ -39,14 +39,14 @@ defmodule Astarte.RealmManagement.APIWeb.DeviceControllerTest do
   end
 
   describe "delete" do
-    test "deletes existing device", %{conn: conn} do
-      delete_conn = delete(conn, device_path(conn, :delete, @realm, @device_id))
+    test "deletes existing device", %{conn: conn, realm: realm} do
+      delete_conn = delete(conn, device_path(conn, :delete, realm, @device_id))
 
       assert response(delete_conn, 204)
     end
 
-    test "renders error on non-existing device", %{conn: conn} do
-      delete_conn = delete(conn, device_path(conn, :delete, @realm, @other_device_id))
+    test "renders error on non-existing device", %{conn: conn, realm: realm} do
+      delete_conn = delete(conn, device_path(conn, :delete, realm, @other_device_id))
 
       assert json_response(delete_conn, 404)["errors"] != %{}
     end

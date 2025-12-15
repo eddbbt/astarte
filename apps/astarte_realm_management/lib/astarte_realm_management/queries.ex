@@ -27,7 +27,7 @@ defmodule Astarte.RealmManagement.Queries do
   alias Astarte.DataAccess.Realms.IndividualProperty
   alias Astarte.DataAccess.Realms.Endpoint
   alias Astarte.DataAccess.Realms.SimpleTrigger
-  alias Astarte.RealmManagement.Repo
+  alias Astarte.DataAccess.Repo
   alias Astarte.DataAccess.Realms.Realm
   alias Astarte.DataAccess.KvStore
   alias Astarte.Core.AstarteReference
@@ -455,7 +455,9 @@ defmodule Astarte.RealmManagement.Queries do
 
     consistency = Consistency.domain_model(:read)
 
-    Repo.some?(devices_query, prefix: keyspace, consistency: consistency)
+    {:ok, some?} = Repo.some?(devices_query, prefix: keyspace, consistency: consistency)
+
+    some?
   end
 
   def devices_with_data_on_interface(realm_name, interface_name) do
@@ -620,9 +622,9 @@ defmodule Astarte.RealmManagement.Queries do
 
     consistency = Consistency.domain_model(:read)
 
-    with {:ok, interface_versions_map} <-
+    with {:ok, interface_versions} <-
            Repo.fetch_all(interface_versions_query, prefix: keyspace, consistency: consistency) do
-      case interface_versions_map do
+      case interface_versions do
         [] ->
           {:error, :interface_not_found}
 
@@ -647,7 +649,9 @@ defmodule Astarte.RealmManagement.Queries do
 
     consistency = Consistency.domain_model(:read)
 
-    Repo.some?(query, prefix: keyspace, consistency: consistency)
+    {:ok, some?} = Repo.some?(query, prefix: keyspace, consistency: consistency)
+
+    some?
   end
 
   defp normalize_interface_name(interface_name) do
@@ -696,38 +700,40 @@ defmodule Astarte.RealmManagement.Queries do
              prefix: keyspace,
              consistency: consistency,
              error: :interface_not_found
-           ),
-         endpoints_query = from(Endpoint, where: [interface_id: ^interface.interface_id]),
-         {:ok, mappings} <-
-           Repo.fetch_all(endpoints_query, prefix: keyspace, consistency: consistency) do
-      mappings =
-        Enum.map(mappings, fn endpoint ->
-          %Mapping{}
-          |> Mapping.changeset(Map.from_struct(endpoint),
-            interface_name: interface.name,
-            interface_id: interface.interface_id,
-            interface_major: interface.major_version,
-            interface_type: interface.type
-          )
-          |> Ecto.Changeset.apply_changes()
+           ) do
+      endpoints_query = from(Endpoint, where: [interface_id: ^interface.interface_id])
+
+      with {:ok, endpoints} <-
+             Repo.fetch_all(endpoints_query, prefix: keyspace, consistency: consistency) do
+        mappings =
+          Enum.map(endpoints, fn endpoint ->
+            %Mapping{}
+            |> Mapping.changeset(Map.from_struct(endpoint),
+              interface_name: interface.name,
+              interface_id: interface.interface_id,
+              interface_major: interface.major_version,
+              interface_type: interface.type
+            )
+            |> Ecto.Changeset.apply_changes()
+            |> Map.from_struct()
+            |> Map.put(:type, endpoint.value_type)
+          end)
+
+        interface =
+          interface
           |> Map.from_struct()
-          |> Map.put(:type, endpoint.value_type)
-        end)
+          |> Map.put(:mappings, mappings)
+          |> Map.put(:version_major, interface.major_version)
+          |> Map.put(:version_minor, interface.minor_version)
+          |> Map.put(:interface_name, interface.name)
 
-      interface =
-        interface
-        |> Map.from_struct()
-        |> Map.put(:mappings, mappings)
-        |> Map.put(:version_major, interface.major_version)
-        |> Map.put(:version_minor, interface.minor_version)
-        |> Map.put(:interface_name, interface.name)
+        interface_document =
+          %InterfaceDocument{}
+          |> InterfaceDocument.changeset(interface)
+          |> Ecto.Changeset.apply_changes()
 
-      interface_document =
-        %InterfaceDocument{}
-        |> InterfaceDocument.changeset(interface)
-        |> Ecto.Changeset.apply_changes()
-
-      {:ok, interface_document}
+        {:ok, interface_document}
+      end
     end
   end
 
@@ -753,7 +759,9 @@ defmodule Astarte.RealmManagement.Queries do
 
     consistency = Consistency.domain_model(:read)
 
-    Repo.some?(simple_triggers_query, prefix: keyspace, consistency: consistency)
+    {:ok, some?} = Repo.some?(simple_triggers_query, prefix: keyspace, consistency: consistency)
+
+    some?
   end
 
   def get_jwt_public_key_pem(realm_name) do
@@ -1137,7 +1145,7 @@ defmodule Astarte.RealmManagement.Queries do
     )
   end
 
-  def check_policy_has_triggers(realm_name, policy_name) do
+  def policy_has_triggers?(realm_name, policy_name) do
     keyspace = Realm.keyspace_name(realm_name)
     group_name = "triggers-with-policy-#{policy_name}"
 
@@ -1152,7 +1160,9 @@ defmodule Astarte.RealmManagement.Queries do
       consistency: Consistency.domain_model(:read)
     ]
 
-    Repo.some?(query, opts)
+    {:ok, some?} = Repo.some?(query, opts)
+
+    some?
   end
 
   def delete_trigger_policy(realm_name, policy_name) do
@@ -1205,7 +1215,7 @@ defmodule Astarte.RealmManagement.Queries do
     Repo.some?(query, opts)
   end
 
-  def check_device_exists(realm_name, device_id) do
+  def device_exists?(realm_name, device_id) do
     keyspace = Realm.keyspace_name(realm_name)
 
     query =
@@ -1218,7 +1228,9 @@ defmodule Astarte.RealmManagement.Queries do
       consistency: Consistency.device_info(:read)
     ]
 
-    Repo.some?(query, opts)
+    {:ok, some?} = Repo.some?(query, opts)
+
+    some?
   end
 
   def table_exist?(realm_name, table_name) do
@@ -1229,7 +1241,9 @@ defmodule Astarte.RealmManagement.Queries do
         select: schema.table_name,
         where: [table_name: ^table_name, keyspace_name: ^keyspace]
 
-    Repo.some?(query, consistency: Consistency.domain_model(:read))
+    {:ok, some?} = Repo.some?(query, consistency: Consistency.domain_model(:read))
+
+    some?
   end
 
   def insert_device_into_deletion_in_progress(realm_name, device_id) do
@@ -1244,6 +1258,7 @@ defmodule Astarte.RealmManagement.Queries do
 
     opts = [
       prefix: keyspace,
+      overwrite: false,
       consistency: Consistency.device_info(:write)
     ]
 
@@ -1266,38 +1281,6 @@ defmodule Astarte.RealmManagement.Queries do
     ]
 
     Repo.one(query, opts)
-  end
-
-  def retrieve_interface_descriptor!(
-        realm_name,
-        interface_name,
-        interface_major
-      ) do
-    keyspace = Realm.keyspace_name(realm_name)
-
-    opts = [
-      prefix: keyspace,
-      consistency: Consistency.domain_model(:read)
-    ]
-
-    interface =
-      Repo.get_by!(Interface, [name: interface_name, major_version: interface_major], opts)
-
-    %InterfaceDescriptor{
-      name: interface.name,
-      major_version: interface.major_version,
-      minor_version: interface.minor_version,
-      type: interface.type,
-      ownership: interface.ownership,
-      aggregation: interface.aggregation,
-      interface_id: interface.interface_id,
-      automaton: {
-        :erlang.binary_to_term(interface.automaton_transitions),
-        :erlang.binary_to_term(interface.automaton_accepting_states)
-      },
-      storage: interface.storage,
-      storage_type: interface.storage_type
-    }
   end
 
   def retrieve_individual_datastreams_keys!(realm_name, device_id) do
@@ -1325,7 +1308,6 @@ defmodule Astarte.RealmManagement.Queries do
         endpoint_id,
         path
       ) do
-    # TODO: validate realm name
     keyspace_name = Realm.keyspace_name(realm_name)
 
     query =
@@ -1366,7 +1348,6 @@ defmodule Astarte.RealmManagement.Queries do
   end
 
   def delete_individual_properties_values!(realm_name, device_id, interface_id) do
-    # TODO: validate realm name
     keyspace_name = Realm.keyspace_name(realm_name)
 
     query =
@@ -1402,7 +1383,6 @@ defmodule Astarte.RealmManagement.Queries do
   end
 
   def delete_object_datastream_values!(realm_name, device_id, path, table_name) do
-    # TODO: validate realm name
     keyspace_name = Realm.keyspace_name(realm_name)
 
     query =
@@ -1437,7 +1417,6 @@ defmodule Astarte.RealmManagement.Queries do
   end
 
   def delete_alias_values!(realm_name, device_alias) do
-    # TODO: validate realm name
     keyspace_name = Realm.keyspace_name(realm_name)
 
     query =
@@ -1506,7 +1485,6 @@ defmodule Astarte.RealmManagement.Queries do
   end
 
   def delete_kv_store_entry!(realm_name, group, key) do
-    # TODO: validate realm name
     keyspace_name = Realm.keyspace_name(realm_name)
 
     query =
@@ -1524,7 +1502,6 @@ defmodule Astarte.RealmManagement.Queries do
   end
 
   def delete_device!(realm_name, device_id) do
-    # TODO: validate realm name
     keyspace_name = Realm.keyspace_name(realm_name)
 
     query =
@@ -1543,7 +1520,6 @@ defmodule Astarte.RealmManagement.Queries do
   end
 
   def remove_device_from_deletion_in_progress!(realm_name, device_id) do
-    # TODO: validate realm name
     keyspace_name = Realm.keyspace_name(realm_name)
 
     query =

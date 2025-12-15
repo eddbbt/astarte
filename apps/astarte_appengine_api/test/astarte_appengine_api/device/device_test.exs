@@ -17,7 +17,7 @@
 
 defmodule Astarte.AppEngine.API.DeviceTest do
   use ExUnit.Case
-  alias Astarte.AppEngine.API.DatabaseTestHelper
+  alias Astarte.Helpers.Database, as: DatabaseTestHelper
   alias Astarte.AppEngine.API.Device
   alias Astarte.AppEngine.API.Device.DeviceStatus
   alias Astarte.AppEngine.API.Device.DevicesList
@@ -25,13 +25,6 @@ defmodule Astarte.AppEngine.API.DeviceTest do
   alias Astarte.AppEngine.API.Device.InterfaceValues
   alias Astarte.AppEngine.API.Repo
   alias Astarte.DataAccess.Realms.Realm
-
-  alias Astarte.RPC.Protocol.VMQ.Plugin.{
-    Call,
-    Publish,
-    PublishReply,
-    Reply
-  }
 
   import Mox
 
@@ -2082,10 +2075,5 @@ defmodule Astarte.AppEngine.API.DeviceTest do
 
   defp unpack_interface_values({:ok, %InterfaceValues{data: values}}) do
     values
-  end
-
-  defp tagged_publish_reply(local_matches, remote_matches \\ 0) do
-    reply = %PublishReply{local_matches: local_matches, remote_matches: remote_matches}
-    {:publish_reply, reply}
   end
 end

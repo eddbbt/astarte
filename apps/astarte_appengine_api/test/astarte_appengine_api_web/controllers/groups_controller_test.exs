@@ -18,10 +18,10 @@
 
 defmodule Astarte.AppEngine.APIWeb.GroupsControllerTest do
   use ExUnitProperties
-  use Astarte.AppEngine.APIWeb.ConnCase
+  use Astarte.Cases.Conn
 
-  alias Astarte.AppEngine.API.DatabaseTestHelper
-  alias Astarte.AppEngine.API.JWTTestHelper
+  alias Astarte.Helpers.Database, as: DatabaseTestHelper
+  alias Astarte.Helpers.JWT, as: JWTTestHelper
   alias Astarte.AppEngine.API.Device
   alias Astarte.AppEngine.API.Device.DevicesList
   alias Astarte.AppEngine.API.Device.DeviceStatus
@@ -58,10 +58,10 @@ defmodule Astarte.AppEngine.APIWeb.GroupsControllerTest do
   end
 
   describe "index" do
-    test "returns 403 on unexisting realm", %{conn: conn} do
+    test "returns 401 on unexisting realm", %{conn: conn} do
       conn = get(conn, groups_path(conn, :index, "unexisting"))
 
-      assert json_response(conn, 403)["errors"] == %{"detail" => "Forbidden"}
+      assert json_response(conn, 401)["errors"] == %{"detail" => "Unauthorized"}
     end
 
     test "returns an empty list on empty realm", %{conn: conn} do
