@@ -42,7 +42,7 @@ defmodule AstarteE2E.TaskScheduler do
     opts = [interfaces: interfaces]
 
     checks = [
-      AstarteE2E.AmqpDataTrigger,
+      # AstarteE2E.AmqpDataTrigger,
       AstarteE2E.AmqpDeviceTrigger,
       AstarteE2E.DataTrigger,
       AstarteE2E.DeviceTrigger,
