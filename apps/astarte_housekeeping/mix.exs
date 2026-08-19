@@ -23,7 +23,7 @@ defmodule Astarte.Housekeeping.Mixfile do
     [
       app: :astarte_housekeeping,
       # x-release-please-start-version
-      version: "1.4.0-rc.4",
+      version: "1.7.1",
       # x-release-please-end
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
