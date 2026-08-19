@@ -22,7 +22,8 @@ defmodule Astarte.Pairing.Mixfile do
   def project do
     [
       app: :astarte_pairing,
-      elixir: "~> 1.15",
+
+      # x-release-please-start-version
       version: "1.4.0-rc.4",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
