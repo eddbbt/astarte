@@ -23,7 +23,7 @@ defmodule Astarte.RealmManagement.Mixfile do
     [
       app: :astarte_realm_management,
       # x-release-please-start-version
-      version: "1.4.0-rc.4",
+      version: "1.7.0-test-release",
       # x-release-please-end
       build_path: "_build",
       config_path: "config/config.exs",
