@@ -24,7 +24,7 @@ defmodule Astarte.TriggerEngine.Mixfile do
       app: :astarte_trigger_engine,
       elixir: "~> 1.15",
       # x-release-please-start-version
-      version: "1.4.0-rc.4",
+      version: "1.7.1",
       # x-release-please-end
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,

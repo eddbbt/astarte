@@ -23,7 +23,7 @@ defmodule AstarteSecrets.MixProject do
     [
       app: :astarte_secrets,
       # x-release-please-start-version
-      version: "1.4.0-rc.4",
+      version: "1.7.1",
       # x-release-please-end
       elixir: "~> 1.15",
       test_coverage: [tool: ExCoveralls],

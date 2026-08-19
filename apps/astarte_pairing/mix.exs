@@ -24,7 +24,7 @@ defmodule Astarte.Pairing.Mixfile do
       app: :astarte_pairing,
 
       # x-release-please-start-version
-      version: "1.4.0-rc.4",
+      version: "1.7.1",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       test_coverage: [tool: ExCoveralls],
@@ -63,7 +63,7 @@ defmodule Astarte.Pairing.Mixfile do
   defp astarte_required_modules(_) do
     [
       {:astarte_core,
-       github: "astarte-platform/astarte_core", tag: "v1.4.0-rc.4", override: true},
+       github: "astarte-platform/astarte_core", tag: "v1.7.1", override: true},
       {:astarte_realm_management,
        path: "../astarte_realm_management", only: :test, runtime: false}
     ]
@@ -74,7 +74,7 @@ defmodule Astarte.Pairing.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:castore, "~> 1.0.0"},
+      {:castore, "~> 1.7.1"},
       {:phoenix, "~> 1.7"},
       {:gettext, "~> 0.24"},
       {:plug_cowboy, "~> 2.2"},
@@ -83,7 +83,7 @@ defmodule Astarte.Pairing.Mixfile do
       {:jason, "~> 1.2"},
       {:cbor, "~> 1.0"},
       {:cose, github: "secomind/cose-elixir"},
-      {:guardian, "~> 2.3.2"},
+      {:guardian, "~> 1.7.1"},
       {:remote_ip, "~> 1.0"},
       {:excoveralls, "~> 0.15", only: :test},
       {:mox, "~> 0.5", only: :test},

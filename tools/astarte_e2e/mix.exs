@@ -23,7 +23,7 @@ defmodule AstarteE2E.MixProject do
     [
       app: :astarte_e2e,
       # x-release-please-start-version
-      version: "1.4.0-rc.4",
+      version: "1.7.1",
       # x-release-please-end
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
