@@ -22,7 +22,9 @@ defmodule Astarte.Events.Mixfile do
     [
       app: :astarte_events,
       elixir: "~> 1.15",
+      # x-release-please-start-version
       version: "1.4.0-rc.4",
+      # x-release-please-end
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),

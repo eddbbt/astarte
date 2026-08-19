@@ -4,7 +4,9 @@ defmodule Astarte.Adapters.MixProject do
   def project do
     [
       app: :astarte_adapters,
+      # x-release-please-start-version
       version: "1.3.2",
+      # x-release-please-end
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
