@@ -23,7 +23,7 @@ defmodule AstarteDeviceFleetSimulator.MixProject do
     [
       app: :astarte_device_fleet_simulator,
       # x-release-please-start-version
-      version: "1.4.0-rc.4",
+      version: "1.7.0-test-release",
       # x-release-please-end
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
