@@ -148,4 +148,21 @@ defmodule Astarte.Pairing.Queries do
 
     {:ok, count}
   end
+
+  def store_session(session) do
+    keyspace = Realm.astarte_keyspace_name()
+    consistency = Consistency.device_info(:write)
+    opts = [prefix: keyspace, consistency: consistency]
+
+    with {:ok, _} <- Repo.insert(session, opts) do
+      :ok
+    end
+  end
+
+  def fetch_session(guid) do
+    keyspace = Realm.astarte_keyspace_name()
+    consistency = Consistency.device_info(:read)
+    opts = [prefix: keyspace, consistency: consistency]
+    Repo.fetch(TO2Session, guid, opts)
+  end
 end

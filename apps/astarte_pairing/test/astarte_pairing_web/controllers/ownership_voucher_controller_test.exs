@@ -100,8 +100,8 @@ defmodule Astarte.PairingWeb.Controllers.OwnershipVoucherControllerTest do
       %DeviceStruct{device_id: @sample_device_id}
       |> Repo.delete(prefix: Realm.keyspace_name(realm_name))
 
-      Queries.delete_ownership_voucher(realm_name, sample_device_guid())
-      Queries.delete_ownership_voucher(realm_name, @sample_guid)
+      Queries.delete_ownership_voucher(sample_device_guid())
+      Queries.delete_ownership_voucher(@sample_guid)
     end)
   end
 
@@ -334,7 +334,7 @@ defmodule Astarte.PairingWeb.Controllers.OwnershipVoucherControllerTest do
       path = ownership_voucher_path(conn, :delete_ownership_voucher, realm_name, guid_str)
 
       OwnershipVoucher
-      |> expect(:delete, fn ^realm_name, ^guid -> {:ok, :deleted} end)
+      |> expect(:delete, fn ^guid -> {:ok, :deleted} end)
 
       conn
       |> delete(path)
@@ -348,7 +348,7 @@ defmodule Astarte.PairingWeb.Controllers.OwnershipVoucherControllerTest do
       path = ownership_voucher_path(conn, :delete_ownership_voucher, realm_name, guid_str)
 
       OwnershipVoucher
-      |> expect(:delete, fn ^realm_name, ^guid -> {:error, :not_found} end)
+      |> expect(:delete, fn ^guid -> {:error, :not_found} end)
 
       conn
       |> delete(path)
@@ -371,7 +371,7 @@ defmodule Astarte.PairingWeb.Controllers.OwnershipVoucherControllerTest do
       path = ownership_voucher_path(conn, :delete_ownership_voucher, realm_name, guid_str)
 
       OwnershipVoucher
-      |> expect(:delete, fn ^realm_name, ^guid -> {:error, :rendezvous_revocation_failed} end)
+      |> expect(:delete, fn ^guid -> {:error, :rendezvous_revocation_failed} end)
 
       conn
       |> delete(path)

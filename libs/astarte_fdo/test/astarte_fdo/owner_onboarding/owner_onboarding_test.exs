@@ -57,10 +57,11 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
       key_name: key_name,
       key_algorithm: key_alg,
       voucher_data: cbor_p256_x509,
-      guid: id_p256_x509
+      guid: id_p256_x509,
+      realm: realm_name
     }
 
-    :ok = Queries.create_ownership_voucher(realm_name, voucher)
+    :ok = Queries.create_ownership_voucher(voucher)
 
     hello_msg_p256_x509 =
       HelloDevice.generate(guid: id_p256_x509, kex_name: "ECDH256", easig_info: :es256)
@@ -87,10 +88,11 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
       key_name: key_name,
       key_algorithm: key_alg,
       voucher_data: cbor_p384_x509,
-      guid: id_p384_x509
+      guid: id_p384_x509,
+      realm: realm_name
     }
 
-    :ok = Queries.create_ownership_voucher(realm_name, voucher)
+    :ok = Queries.create_ownership_voucher(voucher)
 
     hello_msg_p384_x509 =
       HelloDevice.generate(guid: id_p384_x509, kex_name: "ECDH384", easig_info: :es384)
@@ -117,10 +119,11 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
       key_name: key_name,
       key_algorithm: key_alg,
       voucher_data: cbor_p256_chain,
-      guid: id_p256_chain
+      guid: id_p256_chain,
+      realm: realm_name
     }
 
-    :ok = Queries.create_ownership_voucher(realm_name, voucher)
+    :ok = Queries.create_ownership_voucher(voucher)
 
     hello_msg_p256_x5chain =
       HelloDevice.generate(guid: id_p256_chain, kex_name: "ECDH256", easig_info: :es256)
@@ -146,10 +149,11 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
       key_name: key_name,
       key_algorithm: key_alg,
       voucher_data: cbor_p384_chain,
-      guid: id_p384_chain
+      guid: id_p384_chain,
+      realm: realm_name
     }
 
-    :ok = Queries.create_ownership_voucher(realm_name, voucher)
+    :ok = Queries.create_ownership_voucher(voucher)
 
     hello_msg_p384_x5chain =
       HelloDevice.generate(guid: id_p384_chain, kex_name: "ECDH384", easig_info: :es384)
@@ -184,19 +188,19 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
     }
   end
 
-  describe "hello_device/2" do
-    test "P-256 Flow: negotiates ECDH256 and ES256", %{realm_name: realm_name, p256_x509: ctx} do
+  describe "hello_device/1" do
+    test "P-256 Flow: negotiates ECDH256 and ES256", %{p256_x509: ctx} do
       assert {:ok, token, resp_binary} =
-               OwnerOnboarding.hello_device(realm_name, ctx.cbor_hello)
+               OwnerOnboarding.hello_device(ctx.cbor_hello)
 
       assert is_binary(token)
       assert {:ok, sign1_msg} = Sign1.verify_decode(resp_binary, ctx.key_struct)
       assert sign1_msg.phdr.alg == :es256
     end
 
-    test "P-384 Flow: negotiates ECDH384 and ES384", %{realm_name: realm_name, p384_x509: ctx} do
+    test "P-384 Flow: negotiates ECDH384 and ES384", %{p384_x509: ctx} do
       assert {:ok, token, resp_binary} =
-               OwnerOnboarding.hello_device(realm_name, ctx.cbor_hello)
+               OwnerOnboarding.hello_device(ctx.cbor_hello)
 
       assert is_binary(token)
       assert {:ok, sign1_msg} = Sign1.verify_decode(resp_binary, ctx.key_struct)
@@ -205,11 +209,10 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
   end
 
   test "P-256 with X5CHAIN: extracts key from certificate chain", %{
-    realm_name: realm_name,
     p256_chain: ctx
   } do
     assert {:ok, token, resp_binary} =
-             OwnerOnboarding.hello_device(realm_name, ctx.cbor_hello)
+             OwnerOnboarding.hello_device(ctx.cbor_hello)
 
     assert is_binary(token)
     assert {:ok, sign1_msg} = Sign1.verify_decode(resp_binary, ctx.key_struct)
@@ -217,18 +220,17 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
   end
 
   test "P-384 with X5CHAIN: extracts key from P-384 certificate chain", %{
-    realm_name: realm_name,
     p384_chain: ctx
   } do
     assert {:ok, token, resp_binary} =
-             OwnerOnboarding.hello_device(realm_name, ctx.cbor_hello)
+             OwnerOnboarding.hello_device(ctx.cbor_hello)
 
     assert is_binary(token)
     assert {:ok, sign1_msg} = Sign1.verify_decode(resp_binary, ctx.key_struct)
     assert sign1_msg.phdr.alg == :es384
   end
 
-  describe "build_owner_service_info_ready/3" do
+  describe "build_owner_service_info_ready/2" do
     test "successfully processes DeviceServiceInfoReady, creates new voucher, and returns OwnerServiceInfoReady",
          %{
            realm: realm_name,
@@ -240,7 +242,6 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
 
       assert {:ok, session, response} =
                OwnerOnboarding.build_owner_service_info_ready(
-                 realm_name,
                  session,
                  %DeviceServiceInfoReady{
                    replacement_hmac: new_hmac,
@@ -260,7 +261,6 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
     } do
       assert {:ok, _session, _result} =
                OwnerOnboarding.build_owner_service_info_ready(
-                 realm_name,
                  session,
                  %DeviceServiceInfoReady{
                    replacement_hmac: nil,
@@ -277,7 +277,6 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
 
       assert {:ok, _, _result} =
                OwnerOnboarding.build_owner_service_info_ready(
-                 realm_name,
                  session,
                  %DeviceServiceInfoReady{
                    replacement_hmac: %Hash{hash: new_hmac, type: :hmac_sha256},
@@ -294,7 +293,6 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
 
       assert {:ok, _, _result} =
                OwnerOnboarding.build_owner_service_info_ready(
-                 realm_name,
                  session,
                  %DeviceServiceInfoReady{
                    replacement_hmac: %Hash{hash: new_hmac, type: :hmac_sha256},
@@ -310,8 +308,7 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
 
       assert {:error, :failed_66} =
                OwnerOnboarding.build_owner_service_info_ready(
-                 realm_name,
-                 %Session{guid: :crypto.strong_rand_bytes(16)},
+                 %Session{guid: :crypto.strong_rand_bytes(16), realm: realm_name},
                  %DeviceServiceInfoReady{
                    replacement_hmac: %Hash{hash: new_hmac, type: :hmac_sha256},
                    max_owner_service_info_sz: 0
@@ -348,20 +345,20 @@ defmodule Astarte.FDO.OwnerOnboarding.OwnerOnboardingTest do
   describe "ov_next_entry/3" do
     test "returns {:ok, entry} for valid entry_num 0", %{realm_name: realm_name, guid: guid} do
       cbor_body = CBOR.encode([0])
-      assert {:ok, _entry} = OwnerOnboarding.ov_next_entry(cbor_body, realm_name, guid)
+      assert {:ok, _entry} = OwnerOnboarding.ov_next_entry(cbor_body, guid)
     end
 
     test "returns {:error, :message_body_error} for invalid CBOR body", context do
-      %{realm_name: realm_name, device_id: guid} = context
+      %{device_id: guid} = context
 
       assert {:error, :message_body_error} =
-               OwnerOnboarding.ov_next_entry(<<0xFF>>, realm_name, guid)
+               OwnerOnboarding.ov_next_entry(<<0xFF>>, guid)
     end
 
-    test "returns error when guid does not match any voucher", %{realm_name: realm_name} do
+    test "returns error when guid does not match any voucher" do
       cbor_body = CBOR.encode([0])
       unknown_guid = :crypto.strong_rand_bytes(16)
-      assert {:error, _} = OwnerOnboarding.ov_next_entry(cbor_body, realm_name, unknown_guid)
+      assert {:error, _} = OwnerOnboarding.ov_next_entry(cbor_body, unknown_guid)
     end
   end
 end
